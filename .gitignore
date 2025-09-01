@@ -1,14 +1,22 @@
+# Python virtual environment
+venv/
+env/
+
+# Database files
+*.db
+*.db-journal
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
 # Dependencies
 node_modules/
-__pycache__/
 
 # Environment variables
 .env
 .env.local
-
-# Database
-*.db
-*.db-journal
 
 # IDE
 .vscode/
