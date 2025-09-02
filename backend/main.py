@@ -1,8 +1,20 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
 from schemas import UserCreate, UserResponse, LoginRequest
 from auth import create_user, get_user_by_username, verify_password
+
+app = FastAPI(title="DeadInternet API", version="0.1.0")
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app = FastAPI(title="DeadInternet API", version="0.1.0")
 
