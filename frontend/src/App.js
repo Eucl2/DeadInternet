@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import AuthModal from './components/AuthModal';
+import AuthForms from './components/AuthForms';
 
 function App() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const updateMousePosition = (e) => {
@@ -14,6 +18,18 @@ function App() {
       window.removeEventListener('mousemove', updateMousePosition);
     };
   }, []);
+
+  const handleAuthSuccess = (userData) => {
+    setUser(userData);
+    setShowAuthModal(false);
+    console.log('User authenticated:', userData);
+    // TODO: Redirect to dashboard or show success message
+  };
+
+  const handleSignOut = () => {
+    setUser(null);
+    // TODO: Clear any stored auth tokens
+  };
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -29,6 +45,12 @@ function App() {
           borderRadius: '50%',
         }}
       />
+
+      {/* Authentication Modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)}>
+        <AuthForms onSuccess={handleAuthSuccess} />
+      </AuthModal>
+
       {/* Navigation */}
       <nav className="flex justify-between items-center px-12 py-6 border-b border-gray-800 backdrop-blur-sm">
         <div className="flex items-center space-x-4">
@@ -36,12 +58,32 @@ function App() {
           <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
         </div>
         <div className="flex items-center space-x-8">
-          <button className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide">
-            Sign In
-          </button>
-          <button className="px-10 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-black font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-lg">
-            Join Network
-          </button>
+          {user ? (
+            <>
+              <span className="text-gray-300">Welcome, {user.username || 'Human'}</span>
+              <button 
+                onClick={handleSignOut}
+                className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => setShowAuthModal(true)}
+                className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
+              >
+                Sign In
+              </button>
+              <button 
+                onClick={() => setShowAuthModal(true)}
+                className="px-10 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-black font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                Join Network
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -62,7 +104,10 @@ function App() {
               No bots. No algorithms. No synthetic content. Just pure human connection in a digital world drowning in artificial noise.
             </p>
           </div>
-          <button className="px-16 py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-black text-xl font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-xl tracking-wide">
+          <button 
+            onClick={() => setShowAuthModal(true)}
+            className="px-16 py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-black text-xl font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-xl tracking-wide"
+          >
             Enter Human Zone
           </button>
         </div>
@@ -81,7 +126,7 @@ function App() {
                  className="inline-flex items-center text-xs text-gray-500 hover:text-orange-500 transition-colors border border-gray-700 hover:border-orange-500 px-3 py-1 rounded-full tracking-wide">
                 <span>Source</span>
                 <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
             </div>
@@ -194,7 +239,10 @@ function App() {
             In a world where authenticity is becoming extinct, genuine human connection is the most radical act.
           </p>
           <div className="flex flex-col sm:flex-row gap-8 justify-center">
-            <button className="px-16 py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-black text-xl font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-xl tracking-wide">
+            <button 
+              onClick={() => setShowAuthModal(true)}
+              className="px-16 py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-black text-xl font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-xl tracking-wide"
+            >
               Create Account
             </button>
             <button className="px-16 py-5 border-2 border-orange-500 text-orange-500 text-xl font-medium rounded-sm hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 hover:text-black transition-all duration-300 tracking-wide">

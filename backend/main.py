@@ -16,8 +16,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app = FastAPI(title="DeadInternet API", version="0.1.0")
-
 @app.on_event("startup")
 def startup_event():
     create_tables()
@@ -45,7 +43,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/auth/login")
 def login(credentials: LoginRequest, db: Session = Depends(get_db)):
-    # Get uuser
+    # Get user
     user = get_user_by_username(db, credentials.username)
     
     if not user or not verify_password(credentials.password, user.password_hash):
