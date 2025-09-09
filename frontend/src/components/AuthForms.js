@@ -3,8 +3,8 @@ import axios from 'axios';
 
 const API_BASE = 'http://localhost:8000';
 
-const AuthForms = ({ onSuccess }) => {
-  const [isSignIn, setIsSignIn] = useState(true);
+const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
+  const [isSignIn, setIsSignIn] = useState(initialMode === 'signin');
   const [formData, setFormData] = useState({
     username: '',
     email: '',

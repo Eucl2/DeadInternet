@@ -5,6 +5,7 @@ import AuthForms from './components/AuthForms';
 function App() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('signin');
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -48,7 +49,7 @@ function App() {
 
       {/* Authentication Modal */}
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)}>
-        <AuthForms onSuccess={handleAuthSuccess} />
+        <AuthForms onSuccess={handleAuthSuccess} initialMode={authMode} />
       </AuthModal>
 
       {/* Navigation */}
@@ -71,13 +72,19 @@ function App() {
           ) : (
             <>
               <button 
-                onClick={() => setShowAuthModal(true)}
+                onClick={() => {
+                  setAuthMode('signin');
+                  setShowAuthModal(true);
+                }}
                 className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
               >
                 Sign In
               </button>
               <button 
-                onClick={() => setShowAuthModal(true)}
+                onClick={() => {
+                  setAuthMode('register');
+                  setShowAuthModal(true);
+                }}
                 className="px-10 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-black font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 Join Network
@@ -105,7 +112,10 @@ function App() {
             </p>
           </div>
           <button 
-            onClick={() => setShowAuthModal(true)}
+            onClick={() => {
+              setAuthMode('register');
+              setShowAuthModal(true);
+            }}
             className="px-16 py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-black text-xl font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-xl tracking-wide"
           >
             Enter Human Zone
@@ -240,7 +250,10 @@ function App() {
           </p>
           <div className="flex flex-col sm:flex-row gap-8 justify-center">
             <button 
-              onClick={() => setShowAuthModal(true)}
+              onClick={() => {
+                setAuthMode('register');
+                setShowAuthModal(true);
+              }}
               className="px-16 py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-black text-xl font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-xl tracking-wide"
             >
               Create Account
