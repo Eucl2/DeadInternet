@@ -1,3 +1,5 @@
+import { Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
+import Pulse from './pages/Pulse';
 import React, { useState, useEffect } from 'react';
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
@@ -7,6 +9,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const updateMousePosition = (e) => {
@@ -24,15 +27,15 @@ function App() {
     setUser(userData);
     setShowAuthModal(false);
     console.log('User authenticated:', userData);
-    // TODO: Redirect to dashboard or show success message
+    navigate('/Pulse');
   };
 
   const handleSignOut = () => {
     setUser(null);
-    // TODO: Clear any stored auth tokens
+    navigate('/');
   };
 
-  return (
+  const LandingPage = () => (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
       {/* Mouse Light Effect */}
       <div 
@@ -46,53 +49,6 @@ function App() {
           borderRadius: '50%',
         }}
       />
-
-      {/* Authentication Modal */}
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)}>
-        <AuthForms onSuccess={handleAuthSuccess} initialMode={authMode} />
-      </AuthModal>
-
-      {/* Navigation */}
-      <nav className="flex justify-between items-center px-12 py-6 border-b border-gray-800 backdrop-blur-sm">
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-sm"></div>
-          <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
-        </div>
-        <div className="flex items-center space-x-8">
-          {user ? (
-            <>
-              <span className="text-gray-300">Welcome, {user.username || 'Human'}</span>
-              <button 
-                onClick={handleSignOut}
-                className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <>
-              <button 
-                onClick={() => {
-                  setAuthMode('signin');
-                  setShowAuthModal(true);
-                }}
-                className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
-              >
-                Sign In
-              </button>
-              <button 
-                onClick={() => {
-                  setAuthMode('register');
-                  setShowAuthModal(true);
-                }}
-                className="px-10 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-black font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
-              >
-                Join Network
-              </button>
-            </>
-          )}
-        </div>
-      </nav>
 
       {/* Hero Section */}
       <section className="px-12 py-32 text-center">
@@ -185,7 +141,7 @@ function App() {
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-10 hover:from-gray-800 hover:to-gray-700 transition-all duration-300 shadow-xl">
               <h3 className="text-4xl font-extralight text-orange-500 mb-6 tracking-wide">Pulse</h3>
               <p className="text-gray-300 mb-8 leading-relaxed text-xl font-light">
-                Chronological feed of verified human thoughts, feelings, and experiences. No algorithmic manipulation—just raw, authentic human expression.
+                Chronological feed of verified human thoughts, feelings, and experiences. Full of raw, authentic human expression.
               </p>
               <div className="text-sm text-gray-500 uppercase tracking-widest font-light">
                 Thoughts • Feelings • Facts • Authentic Expression
@@ -287,6 +243,67 @@ function App() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Navigation */}
+      <nav className="flex justify-between items-center px-12 py-6 border-b border-gray-800 backdrop-blur-sm relative z-50">
+        <Link to="/" className="flex items-center space-x-4">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-sm"></div>
+          <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
+        </Link>
+        <div className="flex items-center space-x-8">
+          {user ? (
+            <>
+              <Link to="/Pulse" className="text-white hover:text-orange-500 transition-colors">Pulse</Link>
+              <span className="text-gray-300">Welcome, {user.username || 'Human'}</span>
+              <button 
+                onClick={handleSignOut}
+                className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => {
+                  setAuthMode('signin');
+                  setShowAuthModal(true);
+                }}
+                className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
+              >
+                Sign In
+              </button>
+              <button 
+                onClick={() => {
+                  setAuthMode('register');
+                  setShowAuthModal(true);
+                }}
+                className="px-10 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-black font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                Join Network
+              </button>
+            </>
+          )}
+        </div>
+      </nav>
+
+      {/* Authentication Modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)}>
+        <AuthForms onSuccess={handleAuthSuccess} initialMode={authMode} />
+      </AuthModal>
+
+      {/* Routes */}
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route 
+          path="/pulse" 
+          element={user ? <Pulse user={user} /> : <Navigate to="/" replace />} 
+        />
+      </Routes>
     </div>
   );
 }
