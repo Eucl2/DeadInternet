@@ -6,6 +6,10 @@ const API_BASE = 'http://localhost:8000';
 const Profile = ({ user, onUserUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState(user?.username || '');
+
+  const [newName, setNewName] = useState('')
+  const [isEditingName, setIsEditingName] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -27,7 +31,6 @@ const Profile = ({ user, onUserUpdate }) => {
         new_username: newUsername
       });
       
-      // Update user state in parent component
       onUserUpdate({ ...user, username: newUsername });
       setSuccess('Username updated successfully!');
       setIsEditing(false);
@@ -39,6 +42,30 @@ const Profile = ({ user, onUserUpdate }) => {
       setLoading(false);
     }
   };
+
+  const handleNameUpdate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await axios.put(`${API_BASE}/auth/set-name`, {
+        user_id: user.id,
+        new_name: newName
+      });
+
+      onUserUpdate({ ...user, name: response.data.name });
+      setSuccess('Name set successfully!');
+      setIsEditingName(false);
+      setNewName('');
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to set name');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="max-w-4xl mx-auto p-8">
@@ -61,6 +88,72 @@ const Profile = ({ user, onUserUpdate }) => {
 
           {/* User Details */}
           <div className="space-y-6">
+
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Name</label>
+              
+              {user?.name ? (
+                <div className="flex flex-col">
+                  <span className="text-lg text-white">{user.name}</span>
+                  <p className="text-xs text-gray-500 mt-1">Name cannot be changed</p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  {isEditingName ? (
+                    <form
+                      onSubmit={handleNameUpdate}
+                      className="flex space-x-3 w-full"
+                    >
+                      <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded focus:border-orange-500 focus:outline-none"
+                        minLength="3"
+                        maxLength="30"
+                        required
+                      />
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="px-4 py-2 bg-orange-500 text-black rounded hover:bg-orange-400 transition-colors disabled:opacity-50"
+                      >
+                        {loading ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingName(false);
+                          setNewName('');
+                          setError('');
+                        }}
+                        className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  ) : (
+                    <>
+                      <span className="text-xs text-gray-500 mt-1">You have not assigned a name to your account</span>
+                      <button
+                        onClick={() => setIsEditingName(true)}
+                        className="text-orange-500 hover:text-orange-400 transition-colors text-sm"
+                      >
+                        Edit
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Status messages */}
+              {error && <div className="mt-2 text-red-400 text-sm">{error}
+                </div>}
+              {success && <div className="mt-2 text-green-400 text-sm">{success}
+                </div>}
+            </div>
+
             {/* Username */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">Username</label>
@@ -123,6 +216,7 @@ const Profile = ({ user, onUserUpdate }) => {
                 {new Date().toLocaleDateString()} {/* Mock data for now */}
               </span>
             </div>
+
           </div>
         </div>
 

@@ -261,7 +261,7 @@ function App() {
             <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
           </Link>
           {user && (
-            <span className="text-gray-300 text-sm">Welcome, {user.username || 'Human'}</span>
+            <span className="text-gray-300 text-sm">Welcome, {user.name || user.username  || 'Human'}</span>
           )}
         </div>
         

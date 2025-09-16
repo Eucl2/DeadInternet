@@ -85,4 +85,30 @@ def update_username(request: dict, db: Session = Depends(get_db)):
     user.username = new_username
     db.commit()
     
-    return {"message": "Username updated successfully"}
+    return {
+        "message": "Username updated successfully"
+    }
+
+@app.put("/auth/set-name")
+def set_name(request: dict, db: Session = Depends(get_db)):
+    user_id = request.get("user_id")
+    new_name = request.get("new_name")
+
+    if not user_id or not new_name:
+        raise HTTPException(status_code=400, detail="User ID and new name required")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.name: #Not allow changing name once set
+        raise HTTPException(
+            status_code=403, 
+            detail="Name already set and cannot be changed"
+        )
+
+    user.name = new_name
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "Name set successfully", "name": user.name}
