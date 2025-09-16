@@ -7,12 +7,16 @@ const Profile = ({ user, onUserUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newUsername, setNewUsername] = useState(user?.username || '');
 
-  const [newName, setNewName] = useState('')
+  const [newName, setNewName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameSuccess, setUsernameSuccess] = useState('');
+
+  const [nameError, setNameError] = useState('');
+  const [nameSuccess, setNameSuccess] = useState('');
 
   const handleUsernameUpdate = async (e) => {
     e.preventDefault();
@@ -22,21 +26,21 @@ const Profile = ({ user, onUserUpdate }) => {
     }
 
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setUsernameError('');
+    setUsernameSuccess('');
 
     try {
-      const response = await axios.put(`${API_BASE}/auth/update-username`, {
+      await axios.put(`${API_BASE}/auth/update-username`, {
         user_id: user.id,
         new_username: newUsername
       });
       
       onUserUpdate({ ...user, username: newUsername });
-      setSuccess('Username updated successfully!');
+      setUsernameSuccess('Username updated successfully!');
       setIsEditing(false);
       
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to update username');
+      setUsernameError(err.response?.data?.detail || 'Failed to update username');
       setNewUsername(user.username); // Reset on error
     } finally {
       setLoading(false);
@@ -46,8 +50,8 @@ const Profile = ({ user, onUserUpdate }) => {
   const handleNameUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setNameError('');
+    setNameSuccess('');
 
     try {
       const response = await axios.put(`${API_BASE}/auth/set-name`, {
@@ -56,11 +60,11 @@ const Profile = ({ user, onUserUpdate }) => {
       });
 
       onUserUpdate({ ...user, name: response.data.name });
-      setSuccess('Name set successfully!');
+      setNameSuccess('Name set successfully!');
       setIsEditingName(false);
       setNewName('');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to set name');
+      setNameError(err.response?.data?.detail || 'Failed to set name');
     } finally {
       setLoading(false);
     }
@@ -99,7 +103,7 @@ const Profile = ({ user, onUserUpdate }) => {
                   <p className="text-xs text-gray-500 mt-1">Name cannot be changed</p>
                 </div>
               ) : (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between w-full">
                   {isEditingName ? (
                     <form
                       onSubmit={handleNameUpdate}
@@ -126,7 +130,7 @@ const Profile = ({ user, onUserUpdate }) => {
                         onClick={() => {
                           setIsEditingName(false);
                           setNewName('');
-                          setError('');
+                          setNameError('');
                         }}
                         className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
                       >
@@ -147,11 +151,9 @@ const Profile = ({ user, onUserUpdate }) => {
                 </div>
               )}
 
-              {/* Status messages */}
-              {error && <div className="mt-2 text-red-400 text-sm">{error}
-                </div>}
-              {success && <div className="mt-2 text-green-400 text-sm">{success}
-                </div>}
+              {/* Name messages */}
+              {nameError && <div className="mt-2 text-red-400 text-sm">{nameError}</div>}
+              {nameSuccess && <div className="mt-2 text-green-400 text-sm">{nameSuccess}</div>}
             </div>
 
             {/* Username */}
@@ -181,7 +183,7 @@ const Profile = ({ user, onUserUpdate }) => {
                       onClick={() => {
                         setIsEditing(false);
                         setNewUsername(user.username);
-                        setError('');
+                        setUsernameError('');
                       }}
                       className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
                     >
@@ -200,6 +202,9 @@ const Profile = ({ user, onUserUpdate }) => {
                   </button>
                 </div>
               )}
+              
+              {usernameError && <div className="mt-2 text-red-400 text-sm">{usernameError}</div>}
+              {usernameSuccess && <div className="mt-2 text-green-400 text-sm">{usernameSuccess}</div>}
             </div>
 
             {/* Email */}
@@ -219,18 +224,6 @@ const Profile = ({ user, onUserUpdate }) => {
 
           </div>
         </div>
-
-        {/* Status Messages */}
-        {error && (
-          <div className="mt-4 p-3 bg-red-900 border border-red-700 rounded text-red-300">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mt-4 p-3 bg-green-900 border border-green-700 rounded text-green-300">
-            {success}
-          </div>
-        )}
       </div>
 
       {/* Account Settings */}
