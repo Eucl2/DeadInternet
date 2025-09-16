@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import Pulse from './pages/Pulse';
+import Profile from './pages/Profile';
 import React, { useState, useEffect } from 'react';
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
@@ -33,6 +34,10 @@ function App() {
   const handleSignOut = () => {
     setUser(null);
     navigate('/');
+  };
+
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser);
   };
 
   const LandingPage = () => (
@@ -250,15 +255,25 @@ function App() {
     <div className="min-h-screen bg-black text-white">
       {/* Navigation */}
       <nav className="flex justify-between items-center px-12 py-6 border-b border-gray-800 backdrop-blur-sm relative z-50">
-        <Link to="/" className="flex items-center space-x-4">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-sm"></div>
-          <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
-        </Link>
+        <div className="flex items-center space-x-6">
+          <Link to="/" className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-sm"></div>
+            <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
+          </Link>
+          {user && (
+            <span className="text-gray-300 text-sm">Welcome, {user.username || 'Human'}</span>
+          )}
+        </div>
+        
         <div className="flex items-center space-x-8">
           {user ? (
             <>
-              <Link to="/Pulse" className="text-white hover:text-orange-500 transition-colors">Pulse</Link>
-              <span className="text-gray-300">Welcome, {user.username || 'Human'}</span>
+              <Link to="/profile" className="text-white hover:text-orange-500 transition-colors">
+                Profile
+              </Link>
+              <Link to="/pulse" className="text-white hover:text-orange-500 transition-colors">
+                Pulse
+              </Link>
               <button 
                 onClick={handleSignOut}
                 className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
@@ -299,11 +314,19 @@ function App() {
       {/* Routes */}
       <Routes>
         <Route path="/" element={<LandingPage />} />
+
         <Route 
           path="/pulse" 
           element={user ? <Pulse user={user} /> : <Navigate to="/" replace />} 
         />
+
+        <Route 
+          path="/profile" 
+          element={user ? <Profile user={user} onUserUpdate={handleUserUpdate} /> : <Navigate to="/" replace />} 
+        />
+
       </Routes>
+      
     </div>
   );
 }

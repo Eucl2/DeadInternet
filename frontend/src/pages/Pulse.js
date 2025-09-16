@@ -59,7 +59,7 @@ const Pulse = ({ user }) => {
           <textarea
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
-            placeholder="Share your authentic human thoughts..."
+            placeholder="Share your thoughts..."
             className="w-full bg-gray-800 border border-gray-700 rounded p-4 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
             rows="4"
             maxLength="500"

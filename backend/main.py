@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database import create_tables, get_db
 from schemas import UserCreate, UserResponse, LoginRequest
 from auth import create_user, get_user_by_username, verify_password
+import models
 
 app = FastAPI(title="DeadInternet API", version="0.1.0")
 
@@ -52,4 +53,36 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
             detail="Invalid credentials"
         )
     
-    return {"message": "Login successful", "user_id": user.id}
+    return {
+        "message": "Login successful", 
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "name": user.name
+        }
+    }
+
+
+@app.put("/auth/update-username")
+def update_username(request: dict, db: Session = Depends(get_db)):
+    user_id = request.get("user_id")
+    new_username = request.get("new_username")
+    
+    if not user_id or not new_username:
+        raise HTTPException(status_code=400, detail="User ID and new username required")
+    
+    existing_user = get_user_by_username(db, new_username)
+
+    if existing_user and existing_user.id != user_id:
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Update username
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.username = new_username
+    db.commit()
+    
+    return {"message": "Username updated successfully"}
