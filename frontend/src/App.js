@@ -288,6 +288,7 @@ function App() {
           </div>
         </div>
       </footer>
+      <Analytics />
     </div>
   );
 }
