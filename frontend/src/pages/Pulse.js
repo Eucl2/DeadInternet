@@ -4,6 +4,7 @@ const Pulse = ({ user }) => {
   const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
+  const [pasteMessage, setPasteMessage] = useState('');
 
   // Mock posts for now
   useEffect(() => {
@@ -24,6 +25,13 @@ const Pulse = ({ user }) => {
       }
     ]);
   }, []);
+
+  // Paste prevention handler
+  const handlePaste = (e) => {
+    e.preventDefault();
+    setPasteMessage('Please type your thoughts fresh!');
+    setTimeout(() => setPasteMessage(''), 4000);
+  };
 
   const handlePostSubmit = (e) => {
     e.preventDefault();
@@ -59,11 +67,18 @@ const Pulse = ({ user }) => {
           <textarea
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
+            onPaste={handlePaste}
             placeholder="Share your thoughts..."
             className="w-full bg-gray-800 border border-gray-700 rounded p-4 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
             rows="4"
             maxLength="500"
           />
+          {/* On paste message */}
+          {pasteMessage && (
+            <div className="text-orange-500 text-sm mt-2 flex items-center">
+              {pasteMessage}
+            </div>
+          )}
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-500">{newPost.length}/500 characters</span>
