@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:8000';
@@ -13,6 +13,14 @@ const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isMountedRef = useRef(true);
+
+  // Cleanup to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,15 +36,20 @@ const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
       const response = await axios.post(`${API_BASE}${endpoint}`, payload);
       
       console.log('Auth success:', response.data);
-
-      // Store session in localStorage
-      localStorage.setItem('session_id', response.data.session_id);
-      onSuccess(response.data.user);
+      
+      if (isMountedRef.current) {
+        localStorage.setItem('session_id', response.data.session_id);
+        onSuccess(response.data.user);
+      }
       
     } catch (err) {
-      setError(err.response?.data?.detail || 'Authentication failed');
+      if (isMountedRef.current) {
+        setError(err.response?.data?.detail || 'Authentication failed');
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 

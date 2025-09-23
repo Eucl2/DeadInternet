@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const API_BASE = 'http://localhost:8000';
+import { API_BASE, POST_LIMITS } from '../config/constants';
+import { formatTimestamp } from '../utils/timeUtils';
+import TagDropdown from '../components/TagDropdown';
 
 const Pulse = ({ user }) => {
   const [posts, setPosts] = useState([]);
@@ -9,16 +10,6 @@ const Pulse = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [pasteMessage, setPasteMessage] = useState('');
   const [selectedTag, setSelectedTag] = useState('Thoughts');
-  const availableTags = [
-    'Thoughts', 
-    'Feelings', 
-    'Facts', 
-    'Travel', 
-    'Food', 
-    'Work', 
-    'Learning', 
-    'Creative'
-  ];
 
   // Load posts from database
   useEffect(() => {
@@ -38,7 +29,7 @@ const Pulse = ({ user }) => {
   const handlePaste = (e) => {
     e.preventDefault();
     setPasteMessage('Please type your thoughts fresh!');
-    setTimeout(() => setPasteMessage(''), 4000);
+    setTimeout(() => setPasteMessage(''), POST_LIMITS.PASTE_MESSAGE_DURATION);
   };
 
   const handlePostSubmit = async (e) => {
@@ -66,17 +57,6 @@ const Pulse = ({ user }) => {
     }
   };
 
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-    
-    if (diffInMinutes < 1) return 'just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
-  };
-
   return (
     <div className="max-w-4xl mx-auto p-8">
       <div className="mb-8">
@@ -88,17 +68,10 @@ const Pulse = ({ user }) => {
       {/* Create Post */}
       <form onSubmit={handlePostSubmit} className="bg-gradient-to-r from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-8 mb-8">
         <div className="mb-4">
-          <div className="mb-3">
-            <select
-              value={selectedTag}
-              onChange={(e) => setSelectedTag(e.target.value)}
-              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:border-orange-500 focus:outline-none text-sm"
-            >
-              {availableTags.map(tag => (
-                <option key={tag} value={tag}>{tag}</option>
-              ))}
-            </select>
-          </div>
+          <TagDropdown 
+            selectedTag={selectedTag}
+            onTagSelect={setSelectedTag}
+          />
           <textarea
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
@@ -106,7 +79,7 @@ const Pulse = ({ user }) => {
             placeholder="Share your thoughts..."
             className="w-full bg-gray-800 border border-gray-700 rounded p-4 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
             rows="4"
-            maxLength="500"
+            maxLength={POST_LIMITS.MAX_LENGTH}
           />
           {/* On paste message */}
           {pasteMessage && (
@@ -116,7 +89,7 @@ const Pulse = ({ user }) => {
           )}
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">{newPost.length}/500 characters</span>
+          <span className="text-sm text-gray-500">{newPost.length}/{POST_LIMITS.MAX_LENGTH} characters</span>
           <button
             type="submit"
             disabled={loading || !newPost.trim()}
