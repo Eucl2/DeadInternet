@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
-from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest
+from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCreate, PostResponse
 from auth import create_user, get_user_by_username, verify_password
 import models
 import secrets
@@ -148,6 +148,48 @@ def logout(session_id: str):
     if session_id in user_sessions:
         del user_sessions[session_id]
     return {"message": "Logged out successfully"}
+
+@app.post("/posts", response_model=PostResponse)
+def create_post(
+    post: PostCreate,
+    session_id: str,
+    db: Session = Depends(get_db)
+):
+    """Create a new post"""
+    user = get_current_user(session_id, db)
+    
+    db_post = models.Post(
+        content=post.content,
+        tag=post.tag,
+        author_id=user.id
+    )
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    
+    return PostResponse(
+        id=db_post.id,
+        content=db_post.content,
+        tag=db_post.tag,
+        author=user.username,
+        created_at=db_post.created_at
+    )
+
+@app.get("/posts", response_model=list[PostResponse])
+def get_posts(db: Session = Depends(get_db)):
+    """Get all posts for feed"""
+    posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
+    
+    return [
+        PostResponse(
+            id=post.id,
+            content=post.content,
+            tag=post.tag,
+            author=post.author.username,
+            created_at=post.created_at
+        ) for post in posts
+    ]
+
 
 def get_current_user(session_id: str, db: Session = Depends(get_db)):
     """Get current user from session"""

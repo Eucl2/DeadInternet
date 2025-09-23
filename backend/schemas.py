@@ -37,3 +37,17 @@ class AuthResponse(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+class PostCreate(BaseModel):
+    content: str
+    tag: str = "Thoughts"
+
+class PostResponse(BaseModel):
+    id: int
+    content: str
+    tag: str
+    author: str  # username
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
