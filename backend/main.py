@@ -2,11 +2,15 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
-from schemas import UserCreate, UserResponse, LoginRequest
+from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest
 from auth import create_user, get_user_by_username, verify_password
 import models
+import secrets
+from datetime import datetime, timedelta
 
-app = FastAPI(title="DeadInternet API", version="0.1.0")
+user_sessions = {}  # session_id -> user_id
+
+app = FastAPI(title="DeadInternet API", version="0.3.0")
 
 # CORS
 app.add_middleware(
@@ -23,13 +27,13 @@ def startup_event():
 
 @app.get("/")
 def read_root():
-    return {"message": "DeadInternet Backend v0.1 - The Last Living Network"}
+    return {"message": "DeadInternet Backend"}
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "version": "0.1.0"}
+    return {"status": "healthy", "version": "0.3.0"}
 
-@app.post("/auth/register", response_model=UserResponse)
+@app.post("/auth/register", response_model=AuthResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     # Check if user exists
     if get_user_by_username(db, user.username):
@@ -40,9 +44,23 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     
     # Create user
     db_user = create_user(db, user)
-    return db_user
+    
+    # Create session
+    session_id = secrets.token_urlsafe(32)
+    user_sessions[session_id] = db_user.id
+    
+    return AuthResponse(
+        session_id=session_id,
+        user=UserResponse(
+            id=db_user.id,
+            username=db_user.username,
+            email=db_user.email,
+            name=db_user.name,
+            created_at=db_user.created_at
+        )
+    )
 
-@app.post("/auth/login")
+@app.post("/auth/login", response_model=AuthResponse)
 def login(credentials: LoginRequest, db: Session = Depends(get_db)):
     # Get user
     user = get_user_by_username(db, credentials.username)
@@ -53,15 +71,20 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
             detail="Invalid credentials"
         )
     
-    return {
-        "message": "Login successful", 
-        "user": {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "name": user.name
-        }
-    }
+    # Create session
+    session_id = secrets.token_urlsafe(32)
+    user_sessions[session_id] = user.id
+    
+    return AuthResponse(
+        session_id=session_id,
+        user=UserResponse(
+            id=user.id,
+            username=user.username,
+            email=user.email,
+            name=user.name,
+            created_at=user.created_at
+        )
+    )
 
 
 @app.put("/auth/update-username")

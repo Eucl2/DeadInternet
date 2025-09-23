@@ -25,6 +25,11 @@ class UserResponse(BaseModel):
     email: str
     name: str = None
     created_at: datetime
+
+class AuthResponse(BaseModel):
+    session_id: str
+    user: UserResponse
+    message: str = "Authentication successful"
     
     class Config:
         from_attributes = True
