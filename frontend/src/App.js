@@ -4,6 +4,7 @@ import Profile from './pages/Profile';
 import React, { useState, useEffect } from 'react';
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
+import axios from 'axios'; 
 
 function App() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -24,6 +25,26 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const session_id = localStorage.getItem('session_id');
+    if (session_id && !user) {
+      validateSession(session_id);
+    }
+  }, [user]);
+
+  const validateSession = async (session_id) => {
+    try {
+      const response = await axios.get('http://localhost:8000/auth/validate-session', {
+        params: { session_id }
+      });
+      setUser(response.data);
+      console.log('Session valid, user restored:', response.data.username);
+    } catch (error) {
+      console.log('Session invalid, clearing');
+      localStorage.removeItem('session_id');
+    }
+  };
+
   const handleAuthSuccess = (userData) => {
     setUser(userData);
     setShowAuthModal(false);
@@ -32,6 +53,7 @@ function App() {
   };
 
   const handleSignOut = () => {
+    localStorage.removeItem('session_id');
     setUser(null);
     navigate('/');
   };

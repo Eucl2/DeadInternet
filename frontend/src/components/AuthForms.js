@@ -27,9 +27,11 @@ const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
 
       const response = await axios.post(`${API_BASE}${endpoint}`, payload);
       
-      // Success! Handle the response
       console.log('Auth success:', response.data);
-      onSuccess(response.data);
+
+      // Store session in localStorage
+      localStorage.setItem('session_id', response.data.session_id);
+      onSuccess(response.data.user);
       
     } catch (err) {
       setError(err.response?.data?.detail || 'Authentication failed');

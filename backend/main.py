@@ -135,3 +135,33 @@ def set_name(request: dict, db: Session = Depends(get_db)):
     db.refresh(user)
 
     return {"message": "Name set successfully", "name": user.name}
+
+@app.get("/auth/validate-session", response_model=UserResponse)
+def validate_session(session_id: str, db: Session = Depends(get_db)):
+    """Validate session and return user data"""
+    user = get_current_user(session_id, db)
+    return user
+
+@app.post("/auth/logout")
+def logout(session_id: str):
+    """Logout and clear session"""
+    if session_id in user_sessions:
+        del user_sessions[session_id]
+    return {"message": "Logged out successfully"}
+
+def get_current_user(session_id: str, db: Session = Depends(get_db)):
+    """Get current user from session"""
+    if not session_id or session_id not in user_sessions:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+    
+    user_id = user_sessions[session_id]
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user
