@@ -8,6 +8,17 @@ const Pulse = ({ user }) => {
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
   const [pasteMessage, setPasteMessage] = useState('');
+  const [selectedTag, setSelectedTag] = useState('Thoughts');
+  const availableTags = [
+    'Thoughts', 
+    'Feelings', 
+    'Facts', 
+    'Travel', 
+    'Food', 
+    'Work', 
+    'Learning', 
+    'Creative'
+  ];
 
   // Load posts from database
   useEffect(() => {
@@ -40,7 +51,7 @@ const Pulse = ({ user }) => {
       const session_id = localStorage.getItem('session_id');
       const response = await axios.post(`${API_BASE}/posts`, {
         content: newPost,
-        tag: 'Thoughts'
+        tag: selectedTag
       }, {
         params: { session_id }
       });
@@ -77,6 +88,17 @@ const Pulse = ({ user }) => {
       {/* Create Post */}
       <form onSubmit={handlePostSubmit} className="bg-gradient-to-r from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-8 mb-8">
         <div className="mb-4">
+          <div className="mb-3">
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:border-orange-500 focus:outline-none text-sm"
+            >
+              {availableTags.map(tag => (
+                <option key={tag} value={tag}>{tag}</option>
+              ))}
+            </select>
+          </div>
           <textarea
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
