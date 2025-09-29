@@ -91,7 +91,7 @@ function App() {
               ZERO AI-GENERATED CONTENT
             </p>
             <p className="text-gray-300 leading-relaxed text-lg">
-              No bots. No algorithms. No synthetic content. Just pure human connection in a digital world drowning in artificial noise.
+              No bots. No synthetic content. Just pure human connection in a digital world drowning in artificial noise.
             </p>
           </div>
           <button 
@@ -106,47 +106,68 @@ function App() {
         </div>
       </section>
 
-      {/* Stats Section (temporary statistics - replace with real data later)*/}
+      {/* Stats Section*/}
       <section className="px-12 py-24 bg-gradient-to-b from-gray-900 to-black">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-6xl font-extralight text-center mb-20 tracking-tight">The Internet <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">Crisis</span></h2>
+          <h2 className="text-6xl font-extralight text-center mb-20 tracking-tight">
+            The Internet <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">Crisis</span>
+          </h2>
           <div className="grid md:grid-cols-3 gap-16">
+            
+            {/* Stat 1: Bot Traffic*/}
             <div className="text-center group">
-              <div className="text-7xl font-extralight text-transparent bg-clip-text bg-gradient-to-b from-orange-500 to-orange-600 mb-6">47%</div>
+              <div className="text-7xl font-extralight text-transparent bg-clip-text bg-gradient-to-b from-orange-500 to-orange-600 mb-6">51%</div>
               <h3 className="text-2xl font-light mb-6 tracking-wide">Bot Traffic</h3>
-              <p className="text-gray-400 leading-relaxed text-lg mb-4">Nearly half of all internet activity is artificial. The human web is disappearing.</p>
-              <a href="https://www.imperva.com/resources/resource-library/reports/bad-bot-report/" target="_blank" rel="noopener noreferrer" 
-                 className="inline-flex items-center text-xs text-gray-500 hover:text-orange-500 transition-colors border border-gray-700 hover:border-orange-500 px-3 py-1 rounded-full tracking-wide">
-                <span>Source</span>
-                <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
-            <div className="text-center group">
-              <div className="text-7xl font-extralight text-transparent bg-clip-text bg-gradient-to-b from-orange-500 to-orange-600 mb-6">73%</div>
-              <h3 className="text-2xl font-light mb-6 tracking-wide">Cannot Distinguish</h3>
-              <p className="text-gray-400 leading-relaxed text-lg mb-4">Users can no longer tell AI-generated content from human-created content.</p>
-              <a href="https://www.pewresearch.org/internet/2023/06/21/how-americans-think-about-ai/" target="_blank" rel="noopener noreferrer"
-                 className="inline-flex items-center text-xs text-gray-500 hover:text-orange-500 transition-colors border border-gray-700 hover:border-orange-500 px-3 py-1 rounded-full tracking-wide">
-                <span>Source</span>
+              <p className="text-gray-400 leading-relaxed text-lg mb-4">
+                For the first time in a decade, bots surpassed humans online in 2024.
+              </p>
+              <a href="https://www.imperva.com/blog/2025-imperva-bad-bot-report-how-ai-is-supercharging-the-bot-threat/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center text-xs text-gray-500 hover:text-orange-500 transition-colors border border-gray-700 hover:border-orange-500 px-3 py-1 rounded-full tracking-wide">
+                <span>Imperva 2025</span>
                 <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
             </div>
+
+            {/* Stat 2: Demand for Transparency*/}
             <div className="text-center group">
-              <div className="text-7xl font-extralight text-transparent bg-clip-text bg-gradient-to-b from-orange-500 to-orange-600 mb-6">∞</div>
-              <h3 className="text-2xl font-light mb-6 tracking-wide">Synthetic Content</h3>
-              <p className="text-gray-400 leading-relaxed text-lg mb-4">AI-generated profiles, comments, art, and media flood every major platform.</p>
-              <a href="https://www.nature.com/articles/s41586-023-06865-0" target="_blank" rel="noopener noreferrer"
-                 className="inline-flex items-center text-xs text-gray-500 hover:text-orange-500 transition-colors border border-gray-700 hover:border-orange-500 px-3 py-1 rounded-full tracking-wide">
-                <span>Source</span>
+              <div className="text-7xl font-extralight text-transparent bg-clip-text bg-gradient-to-b from-orange-500 to-orange-600 mb-6">82%</div>
+              <h3 className="text-2xl font-light mb-6 tracking-wide">Demand Transparency</h3>
+              <p className="text-gray-400 leading-relaxed text-lg mb-4">
+                Want platforms to label AI-generated content so they know what they're seeing.
+              </p>
+              <a href="https://dais.ca/reports/human-or-ai/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-xs text-gray-500 hover:text-orange-500 transition-colors border border-gray-700 hover:border-orange-500 px-3 py-1 rounded-full tracking-wide">
+                <span>Dais Canada 2024</span>
                 <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
             </div>
+
+            {/* Stat 3: Detection Difficulty*/}
+            <div className="text-center group">
+              <div className="text-7xl font-extralight text-transparent bg-clip-text bg-gradient-to-b from-orange-500 to-orange-600 mb-6">53%</div>
+              <h3 className="text-2xl font-light mb-6 tracking-wide">Detection Rate</h3>
+              <p className="text-gray-400 leading-relaxed text-lg mb-4">
+                People can identify AI text only 53% of the time.
+              </p>
+              <a href="https://www.psu.edu/news/information-sciences-and-technology/story/qa-increasing-difficulty-detecting-ai-versus-human" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-xs text-gray-500 hover:text-orange-500 transition-colors border border-gray-700 hover:border-orange-500 px-3 py-1 rounded-full tracking-wide">
+                <span>Penn State Research</span>
+                <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+
           </div>
         </div>
       </section>
@@ -156,10 +177,10 @@ function App() {
         <div className="max-w-8xl mx-auto">
           <div className="text-center mb-24">
             <h2 className="text-7xl font-extralight mb-8 tracking-tight">
-              Five Spaces. <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">Pure Human.</span>
+              Three Spaces. <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">Pure Human.</span>
             </h2>
             <p className="text-2xl text-gray-400 max-w-4xl mx-auto leading-relaxed font-light tracking-wide">
-              Every post created fresh in-app. No copy-paste allowed. Multi-layer human verification for authentic interaction.
+              Every post created fresh in-app. No copy-paste allowed. No AI content allowed.
             </p>
           </div>
 
@@ -186,17 +207,6 @@ function App() {
               </div>
             </div>
 
-            {/* Flickers */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-10 hover:from-gray-800 hover:to-gray-700 transition-all duration-300 shadow-xl">
-              <h3 className="text-4xl font-extralight text-orange-500 mb-6 tracking-wide">Flickers</h3>
-              <p className="text-gray-300 mb-8 leading-relaxed text-xl font-light">
-                Temporary, real-time authentic moments. Content must be created in-app using your device's camera, microphone, or keyboard.
-              </p>
-              <div className="text-sm text-gray-500 uppercase tracking-widest font-light">
-                Live Moments • Real-Time • In-App Creation
-              </div>
-            </div>
-
             {/* Sparks */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-10 hover:from-gray-800 hover:to-gray-700 transition-all duration-300 shadow-xl">
               <h3 className="text-4xl font-extralight text-orange-500 mb-6 tracking-wide">Sparks</h3>
@@ -206,17 +216,6 @@ function App() {
               <div className="text-sm text-gray-500 uppercase tracking-widest font-light">
                 Daily Reflection • Anonymous • Collective Intelligence
               </div>
-            </div>
-          </div>
-
-          {/* Your City - Full Width */}
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-10 hover:from-gray-800 hover:to-gray-700 transition-all duration-300 shadow-xl">
-            <h3 className="text-4xl font-extralight text-orange-500 mb-6 tracking-wide">Your City</h3>
-            <p className="text-gray-300 mb-8 leading-relaxed text-xl font-light">
-              Bridge digital connections to physical community. Verified local meetups, neighborhood projects, and collaborative initiatives with real humans in your geographic area.
-            </p>
-            <div className="text-sm text-gray-500 uppercase tracking-widest font-light">
-              Local Community • Real Meetups • Physical Connection
             </div>
           </div>
         </div>
