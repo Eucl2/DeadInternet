@@ -274,7 +274,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Navigation */}
+      {/* Navigation bar*/}
       <nav className="flex justify-between items-center px-12 py-6 border-b border-gray-800 backdrop-blur-sm relative z-50">
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-4">
@@ -282,19 +282,26 @@ function App() {
             <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
           </Link>
           {user && (
-            <span className="text-gray-300 text-sm">Welcome, {user.name || user.username  || 'Human'}</span>
+            <span className="text-gray-300 text-sm">Welcome, {user.name || user.username || 'Human'}</span>
           )}
         </div>
         
         <div className="flex items-center space-x-8">
           {user ? (
             <>
-              <Link to="/profile" className="text-white hover:text-orange-500 transition-colors">
-                Profile
-              </Link>
               <Link to="/pulse" className="text-white hover:text-orange-500 transition-colors">
                 Pulse
               </Link>
+              <button className="text-white hover:text-orange-500 transition-colors">
+                Creative
+              </button>
+              <button className="text-white hover:text-orange-500 transition-colors">
+                Sparks
+              </button>
+              <Link to="/profile" className="text-white hover:text-orange-500 transition-colors">
+                Profile
+              </Link>
+              
               <button 
                 onClick={handleSignOut}
                 className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
