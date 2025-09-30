@@ -7,6 +7,7 @@ from auth import create_user, get_user_by_username, verify_password
 import models
 import secrets
 from datetime import datetime, timedelta
+from typing import Optional
 
 user_sessions = {}  # session_id -> user_id
 
@@ -176,9 +177,13 @@ def create_post(
     )
 
 @app.get("/posts", response_model=list[PostResponse])
-def get_posts(db: Session = Depends(get_db)):
+def get_posts(session_id: Optional[str] = None, db: Session = Depends(get_db)):
     """Get all posts for feed"""
     posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
+    
+    current_user_id = None
+    if session_id and session_id in user_sessions:
+        current_user_id = user_sessions[session_id]
     
     return [
         PostResponse(
@@ -186,10 +191,11 @@ def get_posts(db: Session = Depends(get_db)):
             content=post.content,
             tag=post.tag,
             author=post.author.username,
-            created_at=post.created_at
+            created_at=post.created_at,
+            like_count=post.like_count,
+            user_has_liked=any(like.user_id == current_user_id for like in post.likes) if current_user_id else False
         ) for post in posts
     ]
-
 
 def get_current_user(session_id: str, db: Session = Depends(get_db)):
     """Get current user from session"""
@@ -207,3 +213,48 @@ def get_current_user(session_id: str, db: Session = Depends(get_db)):
             detail="User not found"
         )
     return user
+
+@app.post("/posts/{post_id}/like")
+def like_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
+    """Like a post"""
+    user = get_current_user(session_id, db)
+    
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # Check if already liked
+    existing_like = db.query(models.Like).filter(
+        models.Like.user_id == user.id,
+        models.Like.post_id == post_id
+    ).first()
+    
+    if existing_like:
+        raise HTTPException(status_code=400, detail="Already liked")
+    
+    like = models.Like(user_id=user.id, post_id=post_id)
+    db.add(like)
+    db.commit()
+    
+    db.refresh(post)
+    return {"like_count": post.like_count}
+
+@app.delete("/posts/{post_id}/like")
+def unlike_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
+    """Unlike a post"""
+    user = get_current_user(session_id, db)
+    
+    # Find the like
+    like = db.query(models.Like).filter(
+        models.Like.user_id == user.id,
+        models.Like.post_id == post_id
+    ).first()
+    
+    if not like:
+        raise HTTPException(status_code=404, detail="Like not found")
+    
+    db.delete(like)
+    db.commit()
+    
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    return {"like_count": post.like_count}

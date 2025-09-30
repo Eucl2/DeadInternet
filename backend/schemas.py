@@ -48,6 +48,8 @@ class PostResponse(BaseModel):
     tag: str
     author: str  # username
     created_at: datetime
+    like_count: int = 0
+    user_has_liked: bool = False
     
     class Config:
         from_attributes = True

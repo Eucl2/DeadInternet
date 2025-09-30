@@ -18,7 +18,10 @@ const Pulse = ({ user }) => {
 
   const loadPosts = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/posts`);
+      const session_id = localStorage.getItem('session_id');
+      const response = await axios.get(`${API_BASE}/posts`, {
+        params: { session_id }
+      });
       setPosts(response.data);
     } catch (error) {
       console.error('Failed to load posts:', error);
@@ -54,6 +57,26 @@ const Pulse = ({ user }) => {
       console.error('Failed to create post:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLikeToggle = async (postId, isLiked) => {
+    const session_id = localStorage.getItem('session_id');
+    
+    try {
+      const response = await axios({
+        method: isLiked ? 'DELETE' : 'POST',
+        url: `${API_BASE}/posts/${postId}/like`,
+        params: { session_id }
+      });
+
+      setPosts(posts.map(post => 
+        post.id === postId 
+          ? { ...post, like_count: response.data.like_count, user_has_liked: !isLiked }
+          : post
+      ));
+    } catch (error) {
+      console.error('Like error:', error);
     }
   };
 
@@ -100,7 +123,6 @@ const Pulse = ({ user }) => {
         </div>
       </form>
 
-      {/* Posts Feed */}
       <div className="space-y-6">
         {posts.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -119,7 +141,29 @@ const Pulse = ({ user }) => {
                 </div>
                 <span className="text-sm text-gray-500">{formatTimestamp(post.created_at)}</span>
               </div>
-              <p className="text-gray-300 leading-relaxed">{post.content}</p>
+              <p className="text-gray-300 leading-relaxed mb-4">{post.content}</p>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleLikeToggle(post.id, post.user_has_liked)}
+                  className="transition-transform hover:scale-110"
+                >
+                  <svg 
+                    className="w-5 h-5" 
+                    fill={post.user_has_liked ? "#ef4444" : "transparent"}
+                    stroke={post.user_has_liked ? "#ef4444" : "#1f2937"}
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                    />
+                  </svg>
+                </button>
+                <span className="text-sm text-gray-400">{post.like_count || 0}</span>
+              </div>
             </div>
           ))
         )}
