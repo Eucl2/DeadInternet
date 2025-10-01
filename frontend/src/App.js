@@ -1,11 +1,18 @@
 import { Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
+
 import Pulse from './pages/Pulse';
 import Profile from './pages/Profile';
-import React, { useState, useEffect } from 'react';
+import ViewProfile from './pages/ViewProfile';
+
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
+import SearchBar from './components/SearchBar';
+
+import React, { useState, useEffect } from 'react';
 import axios from 'axios'; 
 import logo from './assets/logo.png';
+
+
 
 function App() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -288,25 +295,7 @@ function App() {
         </div>
 
         {/* Search Bar */}
-        {user && (
-          <div className="flex-1 max-w-md mx-8">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Start searching..."
-                className="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-sm text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 transition-colors"
-              />
-              <svg 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-          </div>
-        )}
+        {user && <SearchBar />}
         
         <div className="flex items-center space-x-8">
           {user ? (
@@ -373,6 +362,11 @@ function App() {
         <Route 
           path="/profile" 
           element={user ? <Profile user={user} onUserUpdate={handleUserUpdate} /> : <Navigate to="/" replace />} 
+        />
+
+        <Route 
+          path="/profile/:username" 
+          element={user ? <ViewProfile /> : <Navigate to="/" replace />} 
         />
 
       </Routes>

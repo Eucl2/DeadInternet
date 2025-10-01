@@ -14,6 +14,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     name = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    bio = Column(String(100), nullable=True, default="")
     
     posts = relationship("Post", back_populates="author")
     likes = relationship("Like", back_populates="user")

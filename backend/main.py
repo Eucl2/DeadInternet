@@ -258,3 +258,52 @@ def unlike_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
     
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     return {"like_count": post.like_count}
+
+@app.put("/auth/update-bio")
+def update_bio(request: dict, db: Session = Depends(get_db)):
+    user_id = request.get("user_id")
+    new_bio = request.get("bio", "").strip()
+    
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+    
+    if len(new_bio) > 100:
+        raise HTTPException(status_code=400, detail="Bio must be 100 characters or less")
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.bio = new_bio
+    db.commit()
+    db.refresh(user)
+    
+    return {"message": "Bio updated successfully", "bio": user.bio}
+
+
+@app.get("/users/search")
+def search_users(query: str, db: Session = Depends(get_db)):
+    """Search users by username"""
+    if not query or len(query) < 2:
+        return []
+    
+    users = db.query(models.User).filter(
+        models.User.username.ilike(f"%{query}%")
+    ).limit(10).all()
+    
+    return [{"username": u.username, "name": u.name} for u in users]
+
+@app.get("/users/{username}")
+def get_user_profile(username: str, db: Session = Depends(get_db)):
+    """Get user profile by username"""
+    user = db.query(models.User).filter(models.User.username == username).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "username": user.username,
+        "name": user.name,
+        "bio": user.bio,
+        "created_at": user.created_at
+    }

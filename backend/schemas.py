@@ -24,6 +24,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     name: str = None
+    bio: str = "" 
     created_at: datetime
 
 class AuthResponse(BaseModel):
