@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
 import axios from 'axios'; 
+import logo from './assets/logo.png';
 
 function App() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -252,7 +253,7 @@ function App() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row justify-between items-center mb-12">
             <div className="flex items-center space-x-4 mb-8 lg:mb-0">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-sm"></div>
+              <img src={logo} alt="DeadInternet" className="w-20 h-20" />
               <span className="text-3xl font-extralight tracking-wider">DeadInternet</span>
               <span className="text-sm text-gray-500 ml-8 font-light tracking-wide">The Last Living Network</span>
             </div>
@@ -278,7 +279,7 @@ function App() {
       <nav className="flex justify-between items-center px-12 py-6 border-b border-gray-800 backdrop-blur-sm relative z-50">
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-sm"></div>
+            <img src={logo} alt="DeadInternet" className="w-14 h-14" />
             <span className="text-2xl font-extralight tracking-wider">DeadInternet</span>
           </Link>
           {user && (
