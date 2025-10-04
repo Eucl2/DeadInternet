@@ -15,6 +15,9 @@ const Profile = ({ user, onUserUpdate }) => {
   const [bioError, setBioError] = useState('');
   const [bioSuccess, setBioSuccess] = useState('');
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
   const [usernameError, setUsernameError] = useState('');
@@ -100,6 +103,24 @@ const Profile = ({ user, onUserUpdate }) => {
       setBioError(err.response?.data?.detail || 'Failed to update bio');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    
+    try {
+      const session_id = localStorage.getItem('session_id');
+      await axios.delete(`${API_BASE}/auth/delete-account`, {
+        params: { session_id }
+      });
+      
+      localStorage.removeItem('session_id');
+      window.location.href = '/';
+    } catch (err) {
+      alert('Failed to delete account');
+      setDeleteLoading(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -329,11 +350,48 @@ const Profile = ({ user, onUserUpdate }) => {
             <span className="text-sm">Coming Soon</span>
           </div>
           <div className="flex justify-between items-center py-3">
-            <span>Delete Account</span>
-            <span className="text-sm">Coming Soon</span>
+            <div>
+              <span className="text-red-400">Delete Account</span>
+              <p className="text-xs text-gray-500 mt-1">Permanently delete your account and all data</p>
+            </div>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-red-500 rounded-lg p-8 max-w-md">
+            <h3 className="text-2xl font-light text-red-400 mb-4">Delete Account?</h3>
+            <p className="text-gray-300 mb-6">
+              This will permanently delete your account, all your posts, and all your data. 
+              <br />
+              This action cannot be undone.
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete My Account'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleteLoading}
+                className="flex-1 px-4 py-3 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

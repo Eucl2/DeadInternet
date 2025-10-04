@@ -346,3 +346,16 @@ def get_user_profile(username: str, db: Session = Depends(get_db)):
         "bio": user.bio,
         "created_at": user.created_at
     }
+
+@app.delete("/auth/delete-account")
+def delete_account(session_id: str, db: Session = Depends(get_db)):
+    """Delete account"""
+    user = get_current_user(session_id, db)
+    db.delete(user)
+    db.commit()
+    
+    # Clear session
+    if session_id in user_sessions:
+        del user_sessions[session_id]
+    
+    return {"message": "Account deleted successfully"}

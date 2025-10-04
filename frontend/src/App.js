@@ -145,7 +145,7 @@ function App() {
               <div className="text-7xl font-extralight text-transparent bg-clip-text bg-gradient-to-b from-orange-500 to-orange-600 mb-6">82%</div>
               <h3 className="text-2xl font-light mb-6 tracking-wide">Demand Transparency</h3>
               <p className="text-gray-400 leading-relaxed text-lg mb-4">
-                Want platforms to label AI-generated content so they know what they're seeing.
+                82% of people want platforms to label AI-generated content so they know what they're seeing.
               </p>
               <a href="https://dais.ca/reports/human-or-ai/" 
                 target="_blank" 
