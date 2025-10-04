@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE, POST_LIMITS } from '../config/constants';
 import { formatTimestamp } from '../utils/timeUtils';
@@ -11,7 +11,20 @@ const Pulse = ({ user }) => {
   const [pasteMessage, setPasteMessage] = useState('');
   const [selectedTag, setSelectedTag] = useState('Thoughts');
 
-  // Load posts from database
+  const [typingData, setTypingData] = useState({
+    startTime: null,
+    firstCharTime: null,
+    lastEventTime: null,
+    backspaceCount: 0,
+    pauseCount: 0,
+    intervals: []
+  });
+  const typingDataRef = useRef(typingData);
+
+  useEffect(() => {
+    typingDataRef.current = typingData;
+  }, [typingData]);
+
   useEffect(() => {
     loadPosts();
   }, []);
@@ -28,11 +41,123 @@ const Pulse = ({ user }) => {
     }
   };
 
-  // Paste prevention handler
+  const resetTypingData = () => {
+    setTypingData({
+      startTime: null,
+      firstCharTime: null,
+      lastEventTime: null,
+      backspaceCount: 0,
+      pauseCount: 0,
+      intervals: []
+    });
+  };
+
+  const handleFocus = () => {
+    const now = Date.now();
+    setTypingData(prev => ({
+      ...prev,
+      startTime: prev.startTime || now
+    }));
+  };
+
+  const handleKeyDown = (e) => {
+    const now = Date.now();
+    const currentData = typingDataRef.current;
+
+    if (!currentData.startTime) {
+      setTypingData(prev => ({
+        ...prev,
+        startTime: now,
+        firstCharTime: now
+      }));
+      return;
+    }
+
+    if (!currentData.firstCharTime && e.key.length === 1) {
+      setTypingData(prev => ({
+        ...prev,
+        firstCharTime: now
+      }));
+    }
+    // Track pauses
+    if (currentData.lastEventTime) {
+      const interval = now - currentData.lastEventTime;
+      
+      if (interval > 500) {
+        setTypingData(prev => ({
+          ...prev,
+          pauseCount: prev.pauseCount + 1
+        }));
+      }
+
+      setTypingData(prev => ({
+        ...prev,
+        intervals: [...prev.intervals, interval]
+      }));
+    }
+
+    if (e.key === 'Backspace') {
+      setTypingData(prev => ({
+        ...prev,
+        backspaceCount: prev.backspaceCount + 1
+      }));
+    }
+
+    setTypingData(prev => ({
+      ...prev,
+      lastEventTime: now
+    }));
+  };
+
   const handlePaste = (e) => {
     e.preventDefault();
     setPasteMessage('Please type your thoughts fresh!');
     setTimeout(() => setPasteMessage(''), POST_LIMITS.PASTE_MESSAGE_DURATION);
+  };
+
+  const handleInputChange = (e) => {
+    setNewPost(e.target.value);
+  };
+
+  const calculateTypingMetrics = () => {
+    const data = typingDataRef.current;
+    const now = Date.now();
+
+    if (!data.startTime || !data.firstCharTime) {
+      return {
+        totalTime: 0,
+        thinkingTime: 0,
+        averageSpeed: 0,
+        backspaceCount: 0,
+        pauseCount: 0,
+        speedVariance: 0
+      };
+    }
+
+    const totalTime = now - data.startTime;
+    const thinkingTime = data.firstCharTime - data.startTime;
+    const actualTypingTime = totalTime - thinkingTime;
+    const charCount = newPost.length;
+    const averageSpeed = actualTypingTime > 0 ? (charCount / actualTypingTime) * 1000 : 0;
+
+    const intervals = data.intervals;
+    let speedVariance = 0;
+    
+    if (intervals.length > 1) {
+      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const variance = intervals.reduce((sum, interval) => 
+        sum + Math.pow(interval - avgInterval, 2), 0) / intervals.length;
+      speedVariance = Math.sqrt(variance);
+    }
+
+    return {
+      totalTime,
+      thinkingTime,
+      averageSpeed,
+      backspaceCount: data.backspaceCount,
+      pauseCount: data.pauseCount,
+      speedVariance
+    };
   };
 
   const handlePostSubmit = async (e) => {
@@ -43,18 +168,28 @@ const Pulse = ({ user }) => {
     
     try {
       const session_id = localStorage.getItem('session_id');
+      const typingMetrics = calculateTypingMetrics();
+      
+      console.log('Submitting with typing metrics:', typingMetrics);
+
       const response = await axios.post(`${API_BASE}/posts`, {
         content: newPost,
-        tag: selectedTag
+        tag: selectedTag,
+        typing_data: typingMetrics,
+        space: 'pulse'
       }, {
         params: { session_id }
       });
 
-      // Add new post to the beginning of posts array
       setPosts([response.data, ...posts]);
       setNewPost('');
+      resetTypingData();
     } catch (error) {
       console.error('Failed to create post:', error);
+      if (error.response?.data?.detail) {
+        setPasteMessage(error.response.data.detail);
+        setTimeout(() => setPasteMessage(''), 5000);
+      }
     } finally {
       setLoading(false);
     }
@@ -97,14 +232,15 @@ const Pulse = ({ user }) => {
           />
           <textarea
             value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
             onPaste={handlePaste}
             placeholder="Share your thoughts..."
             className="w-full bg-gray-800 border border-gray-700 rounded p-4 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
             rows="4"
             maxLength={POST_LIMITS.MAX_LENGTH}
           />
-          {/* On paste message */}
           {pasteMessage && (
             <div className="text-orange-500 text-sm mt-2 flex items-center">
               {pasteMessage}

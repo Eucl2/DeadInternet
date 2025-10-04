@@ -8,6 +8,7 @@ import models
 import secrets
 from datetime import datetime, timedelta
 from typing import Optional
+from analysis import analyze_typing_pattern, get_analysis_summary
 
 user_sessions = {}  # session_id -> user_id
 
@@ -159,11 +160,45 @@ def create_post(
     """Create a new post"""
     user = get_current_user(session_id, db)
     
+    # Analyze typing pattern if data provided
+    analysis_result = None
+    if post.typing_data:
+        typing_data_dict = post.typing_data.model_dump()
+        analysis_result = analyze_typing_pattern(
+            typing_data=typing_data_dict,
+            content_length=len(post.content),
+            space=post.space
+        )
+        
+        # Log analysis for debugging
+        print(f"Typing Analysis: {get_analysis_summary(analysis_result)}")
+        
+        # BLOCK if analysis says to block
+        if analysis_result.decision == "block":
+            raise HTTPException(
+                status_code=400,
+                detail=analysis_result.reason
+            )
+    
+    # Create post
     db_post = models.Post(
         content=post.content,
         tag=post.tag,
-        author_id=user.id
+        author_id=user.id,
+        space=post.space
     )
+    
+    # Store analysis results if available
+    if analysis_result:
+        db_post.typing_metrics = typing_data_dict
+        db_post.human_score = analysis_result.human_score
+        db_post.analysis_decision = analysis_result.decision
+        db_post.analysis_flags = analysis_result.flags
+        
+        # Mark for review if flagged
+        if analysis_result.decision == "flag":
+            db_post.requires_review = True
+    
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
@@ -173,7 +208,11 @@ def create_post(
         content=db_post.content,
         tag=db_post.tag,
         author=user.username,
-        created_at=db_post.created_at
+        created_at=db_post.created_at,
+        like_count=db_post.like_count,
+        user_has_liked=False,
+        human_score=db_post.human_score,
+        analysis_decision=db_post.analysis_decision
     )
 
 @app.get("/posts", response_model=list[PostResponse])
