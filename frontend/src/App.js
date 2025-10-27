@@ -3,6 +3,8 @@ import { Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import Pulse from './pages/Pulse';
 import Profile from './pages/Profile';
 import ViewProfile from './pages/ViewProfile';
+import Creative from './pages/Creative';
+import CreateCreativePost from './pages/CreateCreativePost';
 
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
@@ -303,9 +305,9 @@ function App() {
               <Link to="/pulse" className="text-white hover:text-orange-500 transition-colors">
                 Pulse
               </Link>
-              <button className="text-white hover:text-orange-500 transition-colors">
+              <Link to="/creative" className="text-white hover:text-orange-500 transition-colors">
                 Creative
-              </button>
+              </Link>
               <button className="text-white hover:text-orange-500 transition-colors">
                 Sparks
               </button>
@@ -357,6 +359,16 @@ function App() {
         <Route 
           path="/pulse" 
           element={user ? <Pulse user={user} /> : <Navigate to="/" replace />} 
+        />
+
+        <Route 
+          path="/creative" 
+          element={user ? <Creative user={user} /> : <Navigate to="/" replace />} 
+        />
+
+        <Route 
+          path="/creative/create" 
+          element={user ? <CreateCreativePost user={user} /> : <Navigate to="/" replace />} 
         />
 
         <Route 

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
 from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCreate, PostResponse
@@ -9,10 +10,14 @@ import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 from analysis import analyze_typing_pattern, get_analysis_summary
+from routers import creative
 
 user_sessions = {}  # session_id -> user_id
 
-app = FastAPI(title="DeadInternet API", version="0.3.0")
+app = FastAPI(title="DeadInternet API", version="0.4.0")
+
+#Creative router
+app.include_router(creative.router)
 
 # CORS
 app.add_middleware(
@@ -22,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve uploaded images
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("startup")
 def startup_event():
@@ -33,7 +41,7 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "version": "0.3.0"}
+    return {"status": "healthy", "version": "0.4.0"}
 
 @app.post("/auth/register", response_model=AuthResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):

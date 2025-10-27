@@ -25,3 +25,7 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# Uploaded images and files
+uploads/*
+!uploads/.gitkeep

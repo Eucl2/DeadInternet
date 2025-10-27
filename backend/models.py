@@ -60,3 +60,72 @@ class Like(Base):
     post = relationship("Post", back_populates="likes")
     
     __table_args__ = (UniqueConstraint('user_id', 'post_id', name='unique_user_post_like'),)
+
+
+
+#Creative Space Models
+class CreativePost(Base):
+    __tablename__ = "creative_posts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String(50), nullable=False)  # 'Writing', 'Drawing', 'Photography'
+    
+    content = Column(Text, nullable=True)  # For Writing
+    final_image_url = Column(String(500), nullable=True)  # For Drawing and Photography
+    
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Typing analysis (for Writing category)
+    typing_metrics = Column(JSON, nullable=True)
+    human_score = Column(Float, nullable=True)  # 0-100 score
+    analysis_decision = Column(String(20), nullable=True)  # approve, flag, block
+    analysis_flags = Column(JSON, nullable=True)  # List of red flags
+    blocked_reason = Column(String(255), nullable=True)
+    
+    # Content analysis (for Writing category)
+    content_analysis = Column(JSON, nullable=True)
+    requires_review = Column(Boolean, default=False)
+    
+    # Relationships
+    author = relationship("User", backref="creative_posts")
+    progress_photos = relationship(
+        "ProgressPhoto", 
+        back_populates="creative_post", 
+        cascade="all, delete-orphan", 
+        order_by="ProgressPhoto.stage_order"
+    )
+    likes = relationship("CreativeLike", back_populates="creative_post", cascade="all, delete-orphan")
+    
+    @property
+    def like_count(self):
+        return len(self.likes)
+
+
+class ProgressPhoto(Base):
+    __tablename__ = "progress_photos"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    creative_post_id = Column(Integer, ForeignKey("creative_posts.id", ondelete="CASCADE"), nullable=False)
+    image_url = Column(String(500), nullable=False)
+    stage_order = Column(Integer, nullable=False)  # 1, 2, 3
+    caption = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    creative_post = relationship("CreativePost", back_populates="progress_photos")
+
+
+class CreativeLike(Base):
+    __tablename__ = "creative_likes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    creative_post_id = Column(Integer, ForeignKey("creative_posts.id"), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    user = relationship("User", backref="creative_likes")
+    creative_post = relationship("CreativePost", back_populates="likes")
+    
+    __table_args__ = (UniqueConstraint('user_id', 'creative_post_id', name='unique_user_creative_like'),)

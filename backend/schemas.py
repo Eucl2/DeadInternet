@@ -1,8 +1,10 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 import re
 
+
+# User schemas
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
@@ -34,6 +36,9 @@ class AuthResponse(BaseModel):
     session_id: str
     user: UserResponse
 
+
+
+# Pulse Schemas
 class TypingData(BaseModel):
     totalTime: float
     thinkingTime: float
@@ -59,5 +64,59 @@ class PostResponse(BaseModel):
     human_score: Optional[float] = None
     analysis_decision: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+
+
+# Creative Schemas
+class ProgressPhotoResponse(BaseModel):
+    id: int
+    image_url: str
+    stage_order: int
+    caption: Optional[str] = None
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class CreativePostCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+    category: str
+    content: Optional[str] = None  # For Writing
+    typing_data: Optional[TypingData] = None  # For Writing category
+    
+    @field_validator('category')
+    @classmethod
+    def validate_category(cls, v):
+        allowed = ['Writing', 'Drawing', 'Photography']
+        if v not in allowed:
+            raise ValueError(f'Category must be one of: {", ".join(allowed)}')
+        return v
+    
+    @field_validator('content')
+    @classmethod
+    def validate_content(cls, v, info):
+        category = info.data.get('category')
+        if category == 'Writing' and not v:
+            raise ValueError('Content required for Writing category')
+        return v
+
+class CreativePostResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    category: str
+    content: Optional[str] = None  # For Writing
+    final_image_url: Optional[str] = None  # For Drawing/Photography
+    author: str  # username
+    author_id: int
+    created_at: datetime
+    like_count: int = 0
+    user_has_liked: bool = False
+    progress_photos: List[ProgressPhotoResponse] = []
+    human_score: Optional[float] = None  # For Writing
+    analysis_decision: Optional[str] = None  # For Writing
+    
     class Config:
         from_attributes = True
