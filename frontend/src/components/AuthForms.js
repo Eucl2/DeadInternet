@@ -13,6 +13,7 @@ const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const isMountedRef = useRef(true);
 
   // Cleanup to prevent memory leaks
@@ -26,6 +27,7 @@ const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const endpoint = isSignIn ? '/auth/login' : '/auth/register';
@@ -38,8 +40,20 @@ const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
       console.log('Auth success:', response.data);
       
       if (isMountedRef.current) {
-        localStorage.setItem('session_id', response.data.session_id);
-        onSuccess(response.data.user);
+        if (isSignIn) {
+          // Login successful
+          localStorage.setItem('session_id', response.data.session_id);
+          onSuccess(response.data.user);
+        } else {
+          // Registration successfull
+          setSuccessMessage(response.data.message);
+          setFormData({
+            username: '',
+            email: '',
+            password: '',
+            name: ''
+          });
+        }
       }
       
     } catch (err) {
@@ -65,17 +79,31 @@ const AuthForms = ({ onSuccess, initialMode = 'signin' }) => {
       <div className="flex mb-6">
         <button
           className={`flex-1 py-2 px-4 rounded-l ${isSignIn ? 'bg-orange-500 text-black' : 'bg-gray-800'}`}
-          onClick={() => setIsSignIn(true)}
+          onClick={() => {
+            setIsSignIn(true);
+            setSuccessMessage('');
+            setError('');
+          }}
         >
           Sign In
         </button>
         <button
           className={`flex-1 py-2 px-4 rounded-r ${!isSignIn ? 'bg-orange-500 text-black' : 'bg-gray-800'}`}
-          onClick={() => setIsSignIn(false)}
+          onClick={() => {
+            setIsSignIn(false);
+            setSuccessMessage('');
+            setError('');
+          }}
         >
           Register
         </button>
       </div>
+
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-900 border border-green-600 rounded text-green-200 text-sm">
+          {successMessage}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

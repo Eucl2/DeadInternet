@@ -75,7 +75,7 @@ const Creative = ({ user }) => {
         to="/creative/create"
         className="block w-full bg-gradient-to-r from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-6 mb-8 hover:from-gray-800 hover:to-gray-700 transition-all text-center"
       >
-        <span className="text-orange-500 text-xl font-light">+ Create New Creative Post</span>
+        <span className="text-orange-500 text-xl font-light">Start a New Creative Post</span>
       </Link>
 
       {/* Category Tabs */}

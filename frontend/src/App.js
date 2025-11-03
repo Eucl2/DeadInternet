@@ -5,6 +5,7 @@ import Profile from './pages/Profile';
 import ViewProfile from './pages/ViewProfile';
 import Creative from './pages/Creative';
 import CreateCreativePost from './pages/CreateCreativePost';
+import VerifyEmail from './pages/VerifyEmail';
 
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
@@ -379,6 +380,11 @@ function App() {
         <Route 
           path="/profile/:username" 
           element={user ? <ViewProfile /> : <Navigate to="/" replace />} 
+        />
+
+        <Route 
+          path="/verify-email" 
+          element={<VerifyEmail />} 
         />
 
       </Routes>

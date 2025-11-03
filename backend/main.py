@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from analysis import analyze_typing_pattern, get_analysis_summary
 from routers import creative
+from email_service import send_verification_email
+from auth import verify_email
 
 user_sessions = {}  # session_id -> user_id
 
@@ -43,7 +45,7 @@ def read_root():
 def health_check():
     return {"status": "healthy", "version": "0.4.0"}
 
-@app.post("/auth/register", response_model=AuthResponse)
+@app.post("/auth/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
     # Check if user exists
     if get_user_by_username(db, user.username):
@@ -55,20 +57,11 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     # Create user
     db_user = create_user(db, user)
     
-    # Create session
-    session_id = secrets.token_urlsafe(32)
-    user_sessions[session_id] = db_user.id
-    
-    return AuthResponse(
-        session_id=session_id,
-        user=UserResponse(
-            id=db_user.id,
-            username=db_user.username,
-            email=db_user.email,
-            name=db_user.name,
-            created_at=db_user.created_at
-        )
-    )
+    return {
+        "message": "Registration successful! Check your email to verify your account.",
+        "email": db_user.email,
+        "username": db_user.username
+    }
 
 @app.post("/auth/login", response_model=AuthResponse)
 def login(credentials: LoginRequest, db: Session = Depends(get_db)):
@@ -79,6 +72,13 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=401,
             detail="Invalid credentials"
+        )
+    
+    # Check if email is verified
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="Please verify your email before logging in"
         )
     
     # Create session
@@ -367,3 +367,13 @@ def delete_account(session_id: str, db: Session = Depends(get_db)):
         del user_sessions[session_id]
     
     return {"message": "Account deleted successfully"}
+
+
+@app.post("/auth/verify-email")
+def verify_email_endpoint(token: str, db: Session = Depends(get_db)):
+    """Verify email using token"""
+    try:
+        verify_email(db, token)
+        return {"message": "Email verified successfully!"}
+    except HTTPException as e:
+        raise e

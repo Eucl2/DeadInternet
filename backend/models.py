@@ -16,6 +16,10 @@ class User(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     bio = Column(String(100), nullable=True, default="")
     
+    email_verified = Column(Boolean, default=False)
+    verification_token = Column(String(255), nullable=True, unique=True)
+    verification_token_expires = Column(DateTime, nullable=True)
+
     posts = relationship("Post", back_populates="author")
     likes = relationship("Like", back_populates="user")
 
