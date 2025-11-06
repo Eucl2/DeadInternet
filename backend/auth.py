@@ -6,6 +6,7 @@ from schemas import UserCreate
 from fastapi import HTTPException
 from email_service import generate_verification_token, get_token_expiry, send_verification_email
 import re
+from config import config
 
 def validate_password_strength(password: str) -> None:
     """Validate password strength without exposing it in API responses"""
@@ -33,8 +34,11 @@ def get_user_by_username(db: Session, username: str) -> User:
     """Get user by username"""
     return db.query(User).filter(User.username == username).first()
 
-def create_user(db: Session, user: UserCreate, frontend_url: str = "http://localhost:3000") -> User:
+def create_user(db: Session, user: UserCreate, frontend_url: str = None) -> User:
     """Create a new user in the database and send verification email"""
+    
+    if frontend_url is None:
+        frontend_url = config.FRONTEND_URL
 
     validate_password_strength(user.password)
     

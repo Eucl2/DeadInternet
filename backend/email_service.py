@@ -3,6 +3,7 @@ import resend
 from datetime import datetime, timedelta, timezone
 import secrets
 from dotenv import load_dotenv
+from config import config
 
 load_dotenv()
 
@@ -17,7 +18,7 @@ def get_token_expiry() -> datetime:
     """24 hours to expiire"""
     return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=24)
 
-def send_verification_email(email: str, username: str, verification_token: str, frontend_url: str = "http://localhost:3000") -> bool:
+def send_verification_email(email: str, username: str, verification_token: str, frontend_url: str = None) -> bool:
     """
     Send verification email via Resend
     
@@ -30,6 +31,9 @@ def send_verification_email(email: str, username: str, verification_token: str, 
     Returns:
         True if email sent successfully, False otherwise
     """
+    
+    if frontend_url is None:
+        frontend_url = config.FRONTEND_URL
     
     verification_link = f"{frontend_url}/verify-email?token={verification_token}"
     
