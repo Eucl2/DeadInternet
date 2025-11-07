@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE = 'http://localhost:8000';
+import { API_BASE } from '../config/constants';
 
 const SearchBar = () => {
   const [query, setQuery] = useState('');

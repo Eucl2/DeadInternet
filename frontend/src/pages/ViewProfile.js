@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { formatTimestamp } from '../utils/timeUtils';
 
-const API_BASE = 'http://localhost:8000';
+import { API_BASE } from '../config/constants';
 
 const ViewProfile = () => {
   const { username } = useParams();

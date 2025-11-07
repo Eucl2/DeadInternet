@@ -15,6 +15,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios'; 
 import logo from './assets/logo.png';
 
+import { API_BASE } from './config/constants';
 
 
 function App() {
@@ -45,7 +46,7 @@ function App() {
 
   const validateSession = async (session_id) => {
     try {
-      const response = await axios.get('http://localhost:8000/auth/validate-session', {
+      const response = await axios.get(`${API_BASE}/auth/validate-session`, {
         params: { session_id }
       });
       setUser(response.data);

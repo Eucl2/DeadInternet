@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '../config/constants';
 
 export default function VerifyEmail() {
   const [status, setStatus] = useState('loading');
@@ -19,7 +20,7 @@ export default function VerifyEmail() {
       }
 
       try {
-        const response = await fetch(`http://localhost:8000/auth/verify-email?token=${token}`, {
+        const response = await fetch(`${API_BASE}/auth/verify-email?token=${token}`, {
           method: 'POST',
         });
 
