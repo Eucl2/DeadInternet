@@ -72,12 +72,12 @@ def send_verification_email(email: str, username: str, verification_token: str, 
     If you didn't create this account, please ignore this email.
     
     ---
-    DeadInternet - The only social media where every word is human.
+    DeadInternet - The Last Living Network.
     """
     
     try:
         r = resend.Emails.send({
-            "from": "onboarding@resend.dev",
+            "from": f"{config.RESEND_SENDER_NAME} <{config.RESEND_SENDER_EMAIL}>",
             "to": email,
             "subject": "Verify your DeadInternet Email",
             "html": email_html,
