@@ -255,6 +255,14 @@ function App() {
             <button className="px-16 py-5 border-2 border-orange-500 text-orange-500 text-xl font-medium rounded-sm hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 hover:text-black transition-all duration-300 tracking-wide">
               Learn More
             </button>
+            <a 
+              href="https://forms.gle/on2gavc32gFQWYHQ7" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-16 py-5 border-2 border-gray-500 text-gray-300 text-xl font-medium rounded-sm hover:border-orange-500 hover:text-orange-500 transition-all duration-300 tracking-wide"
+            >
+              Share Feedback
+            </a>
           </div>
         </div>
       </section>
@@ -323,6 +331,14 @@ function App() {
               >
                 Sign Out
               </button>
+              <a 
+                href="https://forms.gle/on2gavc32gFQWYHQ7" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-gray-500 hover:text-gray-300 transition-colors tracking-wide"
+              >
+                Feedback
+              </a>
             </>
           ) : (
             <>
