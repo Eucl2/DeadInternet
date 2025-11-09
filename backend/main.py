@@ -339,6 +339,12 @@ def create_comment(
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
+
+    if len(comment.content) > 200:
+        raise HTTPException(
+            status_code=400, 
+            detail="Comment must be 200 characters or less"
+        )
     
     db_comment = models.Comment(
         content=comment.content,

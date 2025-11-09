@@ -20,8 +20,12 @@ class User(Base):
     verification_token = Column(String(255), nullable=True, unique=True)
     verification_token_expires = Column(DateTime, nullable=True)
 
-    posts = relationship("Post", back_populates="author")
-    likes = relationship("Like", back_populates="user")
+    # Relationships
+    posts = relationship("Post", back_populates="author", cascade="all, delete-orphan")
+    likes = relationship("Like", back_populates="user", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
+    creative_posts = relationship("CreativePost", back_populates="author", cascade="all, delete-orphan")
+    creative_likes = relationship("CreativeLike", back_populates="user", cascade="all, delete-orphan")
 
 class Post(Base):
     __tablename__ = "posts"
@@ -75,7 +79,7 @@ class Comment(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     post = relationship("Post", backref="comments")
-    author = relationship("User", backref="comments")
+    author = relationship("User", back_populates="comments")
 
 #Creative Space Models
 class CreativePost(Base):
@@ -104,7 +108,7 @@ class CreativePost(Base):
     requires_review = Column(Boolean, default=False)
     
     # Relationships
-    author = relationship("User", backref="creative_posts")
+    author = relationship("User", back_populates="creative_posts")
     progress_photos = relationship(
         "ProgressPhoto", 
         back_populates="creative_post", 
@@ -139,7 +143,7 @@ class CreativeLike(Base):
     creative_post_id = Column(Integer, ForeignKey("creative_posts.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
-    user = relationship("User", backref="creative_likes")
+    user = relationship("User", back_populates="creative_likes")
     creative_post = relationship("CreativePost", back_populates="likes")
     
     __table_args__ = (UniqueConstraint('user_id', 'creative_post_id', name='unique_user_creative_like'),)

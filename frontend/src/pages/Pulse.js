@@ -344,7 +344,7 @@ const Pulse = ({ user }) => {
                   )}
                 </div>
               </div>
-              <p className="text-gray-300 leading-relaxed mb-4">{post.content}</p>
+              <p className="text-gray-300 leading-relaxed mb-4 break-words whitespace-normal">{post.content}</p>
               
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">

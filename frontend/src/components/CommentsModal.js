@@ -8,6 +8,7 @@ const CommentsModal = ({ isOpen, postId, onClose, user }) => {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const maxCommentLength = 200;
 
   useEffect(() => {
     if (isOpen && postId) {
@@ -27,10 +28,22 @@ const CommentsModal = ({ isOpen, postId, onClose, user }) => {
     }
   };
 
+  const handleCommentChange = (e) => {
+    const text = e.target.value;
+    if (text.length <= maxCommentLength) {
+      setNewComment(text);
+    }
+  };
+
   const handleSubmitComment = async (e) => {
     e.preventDefault();
     
     if (!newComment.trim()) return;
+    
+    if (newComment.length > maxCommentLength) {
+      alert(`Comment must be ${maxCommentLength} characters or less`);
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -76,14 +89,14 @@ const CommentsModal = ({ isOpen, postId, onClose, user }) => {
         <form onSubmit={handleSubmitComment} className="p-6 border-b border-gray-700">
           <textarea
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={handleCommentChange}
             placeholder="Write a comment..."
-            className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
+            className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none break-words whitespace-normal"
             rows="3"
-            maxLength={500}
+            maxLength={maxCommentLength}
           />
           <div className="flex justify-between items-center mt-3">
-            <span className="text-xs text-gray-500">{newComment.length}/500</span>
+            <span className="text-xs text-gray-500">{newComment.length}/{maxCommentLength}</span>
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
@@ -111,7 +124,7 @@ const CommentsModal = ({ isOpen, postId, onClose, user }) => {
                   <span className="font-medium text-orange-500">@{comment.author}</span>
                   <span className="text-xs text-gray-500">{formatTimestamp(comment.created_at)}</span>
                 </div>
-                <p className="text-gray-300 text-sm leading-relaxed">{comment.content}</p>
+                <p className="text-gray-300 text-sm leading-relaxed break-words whitespace-normal">{comment.content}</p>
               </div>
             ))
           )}
