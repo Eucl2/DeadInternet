@@ -118,5 +118,14 @@ class CreativePostResponse(BaseModel):
     human_score: Optional[float] = None  # For Writing
     analysis_decision: Optional[str] = None  # For Writing
     
+class CommentCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=500)
+
+class CommentResponse(BaseModel):
+    id: int
+    content: str
+    author: str
+    created_at: datetime
+    
     class Config:
         from_attributes = True

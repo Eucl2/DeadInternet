@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
 from config import config
-from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCreate, PostResponse
+from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCreate, PostResponse, CommentCreate, CommentResponse
 from auth import create_user, get_user_by_username, verify_password
 import models
 import secrets
@@ -325,6 +325,57 @@ def delete_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
     db.commit()
     
     return {"message": "Post deleted successfully"}
+
+@app.post("/posts/{post_id}/comments", response_model=CommentResponse)
+def create_comment(
+    post_id: int,
+    session_id: str,
+    comment: CommentCreate,
+    db: Session = Depends(get_db)
+):
+    """Create a comment on a post"""
+    user = get_current_user(session_id, db)
+    
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    db_comment = models.Comment(
+        content=comment.content,
+        post_id=post_id,
+        author_id=user.id
+    )
+    
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    
+    return CommentResponse(
+        id=db_comment.id,
+        content=db_comment.content,
+        author=db_comment.author.username,
+        created_at=db_comment.created_at
+    )
+
+@app.get("/posts/{post_id}/comments")
+def get_comments(post_id: int, db: Session = Depends(get_db)):
+    """Get all comments for a post"""
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    comments = db.query(models.Comment).filter(
+        models.Comment.post_id == post_id
+    ).order_by(models.Comment.created_at.asc()).all()
+    
+    return [
+        {
+            "id": comment.id,
+            "content": comment.content,
+            "author": comment.author.username,
+            "created_at": comment.created_at
+        } for comment in comments
+    ]
 
 @app.put("/auth/update-bio")
 def update_bio(request: dict, db: Session = Depends(get_db)):

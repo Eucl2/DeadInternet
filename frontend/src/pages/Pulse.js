@@ -4,6 +4,7 @@ import { API_BASE, POST_LIMITS } from '../config/constants';
 import { formatTimestamp } from '../utils/timeUtils';
 import TagDropdown from '../components/TagDropdown';
 import ConfirmationModal from '../components/ConfirmationModal';
+import CommentsModal from '../components/CommentsModal';
 
 const Pulse = ({ user }) => {
   const [posts, setPosts] = useState([]);
@@ -13,6 +14,11 @@ const Pulse = ({ user }) => {
   const [selectedTag, setSelectedTag] = useState('Thoughts');
 
   const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    postId: null
+  });
+
+  const [commentsModal, setCommentsModal] = useState({
     isOpen: false,
     postId: null
   });
@@ -249,7 +255,21 @@ const Pulse = ({ user }) => {
     setDeleteModal({ isOpen: false, postId: null });
   };
 
- return (
+  const openCommentsModal = (postId) => {
+    setCommentsModal({
+      isOpen: true,
+      postId: postId
+    });
+  };
+
+  const closeCommentsModal = () => {
+    setCommentsModal({
+      isOpen: false,
+      postId: null
+    });
+  };
+
+  return (
     <div className="max-w-4xl mx-auto p-8">
       <div className="mb-8">
         <h1 className="text-4xl font-extralight mb-4">
@@ -326,26 +346,34 @@ const Pulse = ({ user }) => {
               </div>
               <p className="text-gray-300 leading-relaxed mb-4">{post.content}</p>
               
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleLikeToggle(post.id, post.user_has_liked)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <svg 
-                    className="w-5 h-5" 
-                    fill={post.user_has_liked ? "#ef4444" : "transparent"}
-                    stroke={post.user_has_liked ? "#ef4444" : "#1f2937"}
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleLikeToggle(post.id, post.user_has_liked)}
+                    className="transition-transform hover:scale-110"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-                    />
-                  </svg>
+                    <svg 
+                      className="w-5 h-5" 
+                      fill={post.user_has_liked ? "#ef4444" : "transparent"}
+                      stroke={post.user_has_liked ? "#ef4444" : "#1f2937"}
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                      />
+                    </svg>
+                  </button>
+                  <span className="text-sm text-gray-400">{post.like_count || 0}</span>
+                </div>
+                <button
+                  onClick={() => openCommentsModal(post.id)}
+                  className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+                >
+                  Comments
                 </button>
-                <span className="text-sm text-gray-400">{post.like_count || 0}</span>
               </div>
             </div>
           ))
@@ -367,6 +395,13 @@ const Pulse = ({ user }) => {
         onConfirm={confirmDeletePost}
         onCancel={cancelDeletePost}
         isDangerous={true}
+      />
+
+      <CommentsModal 
+        isOpen={commentsModal.isOpen}
+        postId={commentsModal.postId}
+        onClose={closeCommentsModal}
+        user={user}
       />
     </div>
   );

@@ -65,7 +65,17 @@ class Like(Base):
     
     __table_args__ = (UniqueConstraint('user_id', 'post_id', name='unique_user_post_like'),)
 
-
+class Comment(Base):
+    __tablename__ = "comments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(Text, nullable=False)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    post = relationship("Post", backref="comments")
+    author = relationship("User", backref="comments")
 
 #Creative Space Models
 class CreativePost(Base):
