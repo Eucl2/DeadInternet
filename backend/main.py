@@ -308,6 +308,24 @@ def unlike_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     return {"like_count": post.like_count}
 
+@app.delete("/posts/{post_id}")
+def delete_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
+    """Delete own post"""
+    user = get_current_user(session_id, db)
+    
+    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # Check ownership
+    if post.author_id != user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this post")
+    
+    db.delete(post)
+    db.commit()
+    
+    return {"message": "Post deleted successfully"}
+
 @app.put("/auth/update-bio")
 def update_bio(request: dict, db: Session = Depends(get_db)):
     user_id = request.get("user_id")
