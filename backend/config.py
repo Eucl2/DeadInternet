@@ -8,7 +8,7 @@ class Config:
     
     # Email Service
     RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-    RESEND_SENDER_EMAIL = os.getenv("RESEND_SENDER_EMAIL", "noreply@deadinternet.dk")
+    RESEND_SENDER_EMAIL = os.getenv("RESEND_SENDER_EMAIL", "noreply@mail.deadinternet.dk")
     RESEND_SENDER_NAME = os.getenv("RESEND_SENDER_NAME", "DeadInternet")
     
     # Frontend Configuration
