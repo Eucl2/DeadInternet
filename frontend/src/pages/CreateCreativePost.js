@@ -108,11 +108,11 @@ const CreateCreativePost = ({ user }) => {
     }));
   };
 
-  const handlePaste = (e) => {
-    e.preventDefault();
-    setPasteMessage('Please type your creative work fresh!');
-    setTimeout(() => setPasteMessage(''), 4000);
-  };
+  // const handlePaste = (e) => {
+  //   e.preventDefault();
+  //   setPasteMessage('Please type your creative work fresh!');
+  //   setTimeout(() => setPasteMessage(''), 4000);
+  // };
 
   const calculateTypingMetrics = () => {
     const data = typingDataRef.current;
@@ -370,7 +370,7 @@ const CreateCreativePost = ({ user }) => {
                   onChange={(e) => setContent(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={handleFocus}
-                  onPaste={handlePaste}
+                  //onPaste={handlePaste}
                   placeholder="Write your creative piece..."
                   className="w-full bg-gray-800 border border-gray-700 rounded p-4 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
                   rows="12"
