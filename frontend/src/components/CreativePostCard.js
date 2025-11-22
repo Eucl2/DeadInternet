@@ -1,8 +1,7 @@
 import React from 'react';
 import { formatTimestamp } from '../utils/timeUtils';
 import { API_BASE } from '../config/constants';
-
-const CreativePostCard = ({ post, onLikeToggle, onViewProgress }) => {
+const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete }) => {
   const getCategoryColor = (category) => {
     const colors = {
       'Writing': 'bg-blue-500',
@@ -62,7 +61,20 @@ const CreativePostCard = ({ post, onLikeToggle, onViewProgress }) => {
             <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full"></div>
             <span className="text-orange-500">@{post.author}</span>
           </div>
-          <span className="text-gray-500">{formatTimestamp(post.created_at)}</span>
+          <div className="flex items-center space-x-3">
+            <span className="text-gray-500">{formatTimestamp(post.created_at)}</span>
+            {user && post.author === user.username && (
+              <button
+                onClick={() => onDelete(post.id)}
+                className="text-gray-500 hover:text-red-500 transition-colors"
+                title="Delete post"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Like Button */}

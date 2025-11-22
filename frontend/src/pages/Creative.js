@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import CreativePostCard from '../components/CreativePostCard';
 import CategoryTabs from '../components/CategoryTabs';
 import ProgressViewer from '../components/ProgressViewer';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const Creative = ({ user }) => {
   const [posts, setPosts] = useState([]);
@@ -58,6 +59,39 @@ const Creative = ({ user }) => {
     setViewingProgress(post);
   };
 
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    postId: null
+  });
+
+  const handleDeleteCreativePost = (postId) => {
+    setDeleteModal({
+      isOpen: true,
+      postId: postId
+    });
+  };
+
+  const confirmDeleteCreativePost = async () => {
+    const postId = deleteModal.postId;
+    
+    try {
+      const session_id = localStorage.getItem('session_id');
+      await axios.delete(`${API_BASE}/creative/${postId}`, {
+        params: { session_id }
+      });
+
+      setPosts(posts.filter(post => post.id !== postId));
+      setDeleteModal({ isOpen: false, postId: null });
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete post');
+    }
+  };
+
+  const cancelDeleteCreativePost = () => {
+    setDeleteModal({ isOpen: false, postId: null });
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-8">
       {/* Header */}
@@ -101,6 +135,8 @@ const Creative = ({ user }) => {
               post={post}
               onLikeToggle={handleLikeToggle}
               onViewProgress={handleViewProgress}
+              onDelete={handleDeleteCreativePost}
+              user={user}
             />
           ))}
         </div>
@@ -119,6 +155,17 @@ const Creative = ({ user }) => {
           onClose={() => setViewingProgress(null)}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Post?"
+        message="This post will be permanently deleted. You cannot undo this action."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDeleteCreativePost}
+        onCancel={cancelDeleteCreativePost}
+        isDangerous={true}
+      />
     </div>
   );
 };
