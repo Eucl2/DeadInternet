@@ -6,6 +6,7 @@ import CreativePostCard from '../components/CreativePostCard';
 import CategoryTabs from '../components/CategoryTabs';
 import ProgressViewer from '../components/ProgressViewer';
 import ConfirmationModal from '../components/ConfirmationModal';
+import CommentsModal from '../components/CommentsModal';
 
 const Creative = ({ user }) => {
   const [posts, setPosts] = useState([]);
@@ -57,6 +58,25 @@ const Creative = ({ user }) => {
 
   const handleViewProgress = (post) => {
     setViewingProgress(post);
+  };
+
+  const [commentsModal, setCommentsModal] = useState({
+  isOpen: false,
+  postId: null
+  });
+
+  const openCommentsModal = (postId) => {
+    setCommentsModal({
+      isOpen: true,
+      postId: postId
+    });
+  };
+
+  const closeCommentsModal = () => {
+    setCommentsModal({
+      isOpen: false,
+      postId: null
+    });
   };
 
   const [deleteModal, setDeleteModal] = useState({
@@ -133,10 +153,11 @@ const Creative = ({ user }) => {
             <CreativePostCard
               key={post.id}
               post={post}
+              user={user}
               onLikeToggle={handleLikeToggle}
               onViewProgress={handleViewProgress}
               onDelete={handleDeleteCreativePost}
-              user={user}
+              onViewComments={openCommentsModal}
             />
           ))}
         </div>
@@ -156,6 +177,14 @@ const Creative = ({ user }) => {
         />
       )}
 
+      <CommentsModal 
+        isOpen={commentsModal.isOpen}
+        postId={commentsModal.postId}
+        onClose={closeCommentsModal}
+        user={user}
+        isCreative={true}
+      />
+
       <ConfirmationModal
         isOpen={deleteModal.isOpen}
         title="Delete Post?"
@@ -166,6 +195,7 @@ const Creative = ({ user }) => {
         onCancel={cancelDeleteCreativePost}
         isDangerous={true}
       />
+
     </div>
   );
 };

@@ -114,6 +114,7 @@ class CreativePostResponse(BaseModel):
     author_id: int
     created_at: datetime
     like_count: int = 0
+    comment_count: int = 0
     user_has_liked: bool = False
     progress_photos: List[ProgressPhotoResponse] = []
     human_score: Optional[float] = None  # For Writing

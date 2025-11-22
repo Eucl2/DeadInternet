@@ -3,12 +3,14 @@ import axios from 'axios';
 import { API_BASE } from '../config/constants';
 import { formatTimestamp } from '../utils/timeUtils';
 
-const CommentsModal = ({ isOpen, postId, onClose, user }) => {
+const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const maxCommentLength = 200;
+
+  const baseUrl = isCreative ? `${API_BASE}/creative` : `${API_BASE}/posts`;
 
   useEffect(() => {
     if (isOpen && postId) {
@@ -19,7 +21,7 @@ const CommentsModal = ({ isOpen, postId, onClose, user }) => {
   const loadComments = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE}/posts/${postId}/comments`);
+      const response = await axios.get(`${baseUrl}/${postId}/comments`);
       setComments(response.data);
     } catch (error) {
       console.error('Failed to load comments:', error);
@@ -49,7 +51,7 @@ const CommentsModal = ({ isOpen, postId, onClose, user }) => {
     try {
       const session_id = localStorage.getItem('session_id');
       const response = await axios.post(
-        `${API_BASE}/posts/${postId}/comments`,
+        `${baseUrl}/${postId}/comments`,
         { content: newComment },
         {
           params: { session_id }

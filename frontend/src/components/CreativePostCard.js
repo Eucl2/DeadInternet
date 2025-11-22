@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatTimestamp } from '../utils/timeUtils';
 import { API_BASE } from '../config/constants';
-const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete }) => {
+  const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, onViewComments }) => {
   const getCategoryColor = (category) => {
     const colors = {
       'Writing': 'bg-blue-500',
@@ -77,27 +77,35 @@ const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete }
           </div>
         </div>
 
-        {/* Like Button */}
-        <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-800">
-          <button
-            onClick={() => onLikeToggle(post.id, post.user_has_liked)}
-            className="transition-transform hover:scale-110"
-          >
-            <svg 
-              className="w-5 h-5" 
-              fill={post.user_has_liked ? "#ef4444" : "transparent"}
-              stroke={post.user_has_liked ? "#ef4444" : "#4b5563"}
-              viewBox="0 0 24 24"
-              strokeWidth={2}
+        {/* Like and Comments */}
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-800">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => onLikeToggle(post.id, post.user_has_liked)}
+              className="transition-transform hover:scale-110"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-              />
-            </svg>
+              <svg 
+                className="w-5 h-5" 
+                fill={post.user_has_liked ? "#ef4444" : "transparent"}
+                stroke={post.user_has_liked ? "#ef4444" : "#4b5563"}
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
+                />
+              </svg>
+            </button>
+            <span className="text-sm text-gray-400">{post.like_count || 0}</span>
+          </div>
+          <button
+            onClick={() => onViewComments(post.id)}
+            className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+          >
+            Comments ({post.comment_count})
           </button>
-          <span className="text-sm text-gray-400">{post.like_count || 0}</span>
         </div>
       </div>
     </div>

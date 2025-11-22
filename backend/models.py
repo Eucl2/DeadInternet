@@ -124,6 +124,10 @@ class CreativePost(Base):
     @property
     def like_count(self):
         return len(self.likes)
+    
+    @property
+    def comment_count(self):
+        return len(self.comments)
 
 
 class ProgressPhoto(Base):
@@ -151,3 +155,16 @@ class CreativeLike(Base):
     creative_post = relationship("CreativePost", back_populates="likes")
     
     __table_args__ = (UniqueConstraint('user_id', 'creative_post_id', name='unique_user_creative_like'),)
+
+
+class CreativeComment(Base):
+    __tablename__ = "creative_comments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(Text, nullable=False)
+    creative_post_id = Column(Integer, ForeignKey("creative_posts.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    creative_post = relationship("CreativePost", backref="comments")
+    author = relationship("User")

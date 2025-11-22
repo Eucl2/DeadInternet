@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 import models
 from database import get_db
-from schemas import CreativePostResponse, ProgressPhotoResponse
+from schemas import CommentCreate, CreativePostResponse, ProgressPhotoResponse
 from analysis import analyze_typing_pattern, get_analysis_summary
 import os
 import secrets
@@ -171,6 +171,7 @@ async def create_creative_post(
         author_id=user.id,
         created_at=db_post.created_at,
         like_count=db_post.like_count,
+        comment_count=db_post.comment_count,
         user_has_liked=False,
         progress_photos=[
             ProgressPhotoResponse(
@@ -221,6 +222,7 @@ def get_creative_posts(
             author_id=post.user_id,
             created_at=post.created_at,
             like_count=post.like_count,
+            comment_count=post.comment_count,
             user_has_liked=any(like.user_id == current_user_id for like in post.likes) if current_user_id else False,
             progress_photos=[
                 ProgressPhotoResponse(
@@ -266,6 +268,7 @@ def get_creative_post(
         author_id=post.user_id,
         created_at=post.created_at,
         like_count=post.like_count,
+        comment_count=post.comment_count,
         user_has_liked=any(like.user_id == current_user_id for like in post.likes) if current_user_id else False,
         progress_photos=[
             ProgressPhotoResponse(
@@ -370,3 +373,61 @@ def delete_creative_post(
     db.commit()
     
     return {"message": "Creative post deleted successfully"}
+
+
+@router.post("/{post_id}/comments")
+def create_creative_comment(
+    post_id: int,
+    session_id: str,
+    comment: CommentCreate,
+    db: Session = Depends(get_db)
+):
+    """Create a comment on a creative post"""
+    user = get_current_user(session_id, db)
+    
+    post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Creative post not found")
+
+    if len(comment.content) > 200:
+        raise HTTPException(
+            status_code=400, 
+            detail="Comment must be 200 characters or less"
+        )
+    
+    db_comment = models.CreativeComment(
+        content=comment.content,
+        creative_post_id=post_id,
+        author_id=user.id
+    )
+    
+    db.add(db_comment)
+    db.commit()
+    db.refresh(db_comment)
+    
+    return {
+        "id": db_comment.id,
+        "content": db_comment.content,
+        "author": db_comment.author.username,
+        "created_at": db_comment.created_at
+    }
+
+@router.get("/{post_id}/comments")
+def get_creative_comments(post_id: int, db: Session = Depends(get_db)):
+    """Get all comments for a creative post"""
+    post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Creative post not found")
+    
+    comments = db.query(models.CreativeComment).filter(
+        models.CreativeComment.creative_post_id == post_id
+    ).order_by(models.CreativeComment.created_at.asc()).all()
+    
+    return [
+        {
+            "id": comment.id,
+            "content": comment.content,
+            "author": comment.author.username,
+            "created_at": comment.created_at
+        } for comment in comments
+    ]
