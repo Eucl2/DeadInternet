@@ -15,8 +15,8 @@ import { API_BASE } from '../config/constants';
     <div className="bg-gray-900 border border-gray-700 rounded-lg overflow-hidden hover:border-gray-600 transition-colors">
       {/* Image or Content Preview */}
       {post.category === 'Writing' ? (
-        <div className="p-6 bg-gray-800 min-h-[200px] flex items-center">
-          <p className="text-gray-300 line-clamp-6 leading-relaxed">
+        <div className="p-6 bg-gray-800 aspect-video flex items-center overflow-hidden">
+          <p className="text-gray-300 line-clamp-8 leading-relaxed">
             {post.content}
           </p>
         </div>
@@ -36,6 +36,7 @@ import { API_BASE } from '../config/constants';
           </span>
           
           {/* Progress Dots */}
+          {post.progress_photos.length > 0 && (
           <button
             onClick={() => onViewProgress(post)}
             className="flex items-center space-x-1 hover:opacity-70 transition-opacity"
@@ -46,8 +47,9 @@ import { API_BASE } from '../config/constants';
                 className="w-2 h-2 rounded-full bg-orange-500"
               />
             ))}
-            <span className="text-xs text-gray-500 ml-2">Process</span>
+            <span className="text-xs text-gray-500 ml-2">Check Progress Photos</span>
           </button>
+        )}
         </div>
 
         <h3 className="text-xl font-light text-white mb-2">{post.title}</h3>

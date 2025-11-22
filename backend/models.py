@@ -50,7 +50,8 @@ class Post(Base):
     
     author = relationship("User", back_populates="posts")
     likes = relationship("Like", back_populates="post", cascade="all, delete-orphan")
-    
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+
     @property
     def like_count(self):
         return len(self.likes)
@@ -82,7 +83,7 @@ class Comment(Base):
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
-    post = relationship("Post", backref="comments")
+    post = relationship("Post", back_populates="comments")
     author = relationship("User", back_populates="comments")
 
 #Creative Space Models
@@ -120,6 +121,7 @@ class CreativePost(Base):
         order_by="ProgressPhoto.stage_order"
     )
     likes = relationship("CreativeLike", back_populates="creative_post", cascade="all, delete-orphan")
+    comments = relationship("CreativeComment", back_populates="creative_post", cascade="all, delete-orphan")
     
     @property
     def like_count(self):
@@ -166,5 +168,5 @@ class CreativeComment(Base):
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
-    creative_post = relationship("CreativePost", backref="comments")
+    creative_post = relationship("CreativePost", back_populates="comments")
     author = relationship("User")

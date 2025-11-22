@@ -373,7 +373,7 @@ def get_comments(post_id: int, db: Session = Depends(get_db)):
     
     comments = db.query(models.Comment).filter(
         models.Comment.post_id == post_id
-    ).order_by(models.Comment.created_at.asc()).all()
+    ).order_by(models.Comment.created_at.desc()).all()
     
     return [
         {

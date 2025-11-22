@@ -421,7 +421,7 @@ def get_creative_comments(post_id: int, db: Session = Depends(get_db)):
     
     comments = db.query(models.CreativeComment).filter(
         models.CreativeComment.creative_post_id == post_id
-    ).order_by(models.CreativeComment.created_at.asc()).all()
+    ).order_by(models.CreativeComment.created_at.desc()).all()
     
     return [
         {

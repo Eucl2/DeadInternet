@@ -58,7 +58,7 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
         }
       );
 
-      setComments([...comments, response.data]);
+      setComments([ response.data, ...comments]);
       setNewComment('');
     } catch (error) {
       console.error('Failed to post comment:', error);
