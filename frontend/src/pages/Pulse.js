@@ -372,7 +372,7 @@ const Pulse = ({ user }) => {
                   onClick={() => openCommentsModal(post.id)}
                   className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
                 >
-                  Comments
+                  Comments ({post.comment_count})
                 </button>
               </div>
             </div>

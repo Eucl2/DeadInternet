@@ -242,7 +242,8 @@ def get_posts(session_id: Optional[str] = None, db: Session = Depends(get_db)):
             author=post.author.username,
             created_at=post.created_at,
             like_count=post.like_count,
-            user_has_liked=any(like.user_id == current_user_id for like in post.likes) if current_user_id else False
+            user_has_liked=any(like.user_id == current_user_id for like in post.likes) if current_user_id else False,
+            comment_count=post.comment_count
         ) for post in posts
     ]
 

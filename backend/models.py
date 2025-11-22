@@ -55,6 +55,10 @@ class Post(Base):
     def like_count(self):
         return len(self.likes)
     
+    @property
+    def comment_count(self):
+        return len(self.comments)
+    
 
 class Like(Base):
     __tablename__ = "likes"

@@ -60,6 +60,7 @@ class PostResponse(BaseModel):
     author: str
     created_at: datetime
     like_count: int = 0
+    comment_count: int = 0
     user_has_liked: bool = False
     human_score: Optional[float] = None
     analysis_decision: Optional[str] = None
