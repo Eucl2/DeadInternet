@@ -1,3 +1,6 @@
+import statistics
+from typing import List
+
 class TypingAnalysisResult:
     def __init__(self, human_score: float, decision: str, reason: str = None, flags: list = None):
         self.human_score = human_score
@@ -6,15 +9,54 @@ class TypingAnalysisResult:
         self.flags = flags or []
 
 
-def analyze_typing_pattern(typing_data: dict, content_length: int, space: str = "pulse") -> TypingAnalysisResult:
-    
-    # Metrics
-    total_time = typing_data.get('totalTime', 0)
-    thinking_time = typing_data.get('thinkingTime', 0)
-    avg_speed = typing_data.get('averageSpeed', 0)
+def calculate_typing_metrics(typing_data: dict, content_length: int) -> dict:
+    """
+    - intervals: list of milliseconds between keystrokes
+    - backspaceCount: number of backspaces
+    - pauseCount: number of pauses (>500ms gaps)
+    - totalTime: total time from focus to submission (ms)
+    - thinkingTime: time from focus to first character (ms)
+    """
+    intervals = typing_data.get('intervals', [])
     backspace_count = typing_data.get('backspaceCount', 0)
     pause_count = typing_data.get('pauseCount', 0)
-    speed_variance = typing_data.get('speedVariance', 0)
+    total_time = typing_data.get('totalTime', 0)
+    thinking_time = typing_data.get('thinkingTime', 0)
+    
+    # Calculate averageSpeed (characters per second)
+    actual_typing_time = total_time - thinking_time
+    average_speed = (content_length / actual_typing_time * 1000) if actual_typing_time > 0 else 0
+    
+    # Calculate speedVariance (standard deviation of intervals in ms)
+    speed_variance = 0
+    if len(intervals) > 1:
+        try:
+            speed_variance = statistics.stdev(intervals)
+        except (ValueError, StatisticsError):
+            speed_variance = 0
+    
+    return {
+        'totalTime': total_time,
+        'thinkingTime': thinking_time,
+        'averageSpeed': average_speed,
+        'backspaceCount': backspace_count,
+        'pauseCount': pause_count,
+        'speedVariance': speed_variance,
+        'intervalCount': len(intervals)
+    }
+
+
+def analyze_typing_pattern(typing_data: dict, content_length: int, space: str = "pulse") -> TypingAnalysisResult:
+
+    # Calculate metrics
+    metrics = calculate_typing_metrics(typing_data, content_length)
+    
+    total_time = metrics['totalTime']
+    thinking_time = metrics['thinkingTime']
+    avg_speed = metrics['averageSpeed']
+    backspace_count = metrics['backspaceCount']
+    pause_count = metrics['pauseCount']
+    speed_variance = metrics['speedVariance']
     
     score = 100
     flags = []

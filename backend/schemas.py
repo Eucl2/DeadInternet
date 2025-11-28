@@ -42,10 +42,9 @@ class AuthResponse(BaseModel):
 class TypingData(BaseModel):
     totalTime: float
     thinkingTime: float
-    averageSpeed: float
     backspaceCount: int
     pauseCount: int
-    speedVariance: float
+    intervals: List[int]
 
 class PostCreate(BaseModel):
     content: str

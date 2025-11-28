@@ -29,7 +29,7 @@ const Pulse = ({ user }) => {
     lastEventTime: null,
     backspaceCount: 0,
     pauseCount: 0,
-    intervals: []
+    intervals: []  // Raw time gaps between keystrokes
   });
   const typingDataRef = useRef(typingData);
 
@@ -131,7 +131,7 @@ const Pulse = ({ user }) => {
     setNewPost(e.target.value);
   };
 
-  const calculateTypingMetrics = () => {
+  const getTypingDataForSubmission = () => {
     const data = typingDataRef.current;
     const now = Date.now();
 
@@ -139,36 +139,18 @@ const Pulse = ({ user }) => {
       return {
         totalTime: 0,
         thinkingTime: 0,
-        averageSpeed: 0,
         backspaceCount: 0,
         pauseCount: 0,
-        speedVariance: 0
+        intervals: []
       };
     }
 
-    const totalTime = now - data.startTime;
-    const thinkingTime = data.firstCharTime - data.startTime;
-    const actualTypingTime = totalTime - thinkingTime;
-    const charCount = newPost.length;
-    const averageSpeed = actualTypingTime > 0 ? (charCount / actualTypingTime) * 1000 : 0;
-
-    const intervals = data.intervals;
-    let speedVariance = 0;
-    
-    if (intervals.length > 1) {
-      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      const variance = intervals.reduce((sum, interval) => 
-        sum + Math.pow(interval - avgInterval, 2), 0) / intervals.length;
-      speedVariance = Math.sqrt(variance);
-    }
-
     return {
-      totalTime,
-      thinkingTime,
-      averageSpeed,
+      totalTime: now - data.startTime,
+      thinkingTime: data.firstCharTime - data.startTime,
       backspaceCount: data.backspaceCount,
       pauseCount: data.pauseCount,
-      speedVariance
+      intervals: data.intervals  // Backend calculates speedVariance and averageSpeed
     };
   };
 
@@ -180,14 +162,20 @@ const Pulse = ({ user }) => {
     
     try {
       const session_id = localStorage.getItem('session_id');
-      const typingMetrics = calculateTypingMetrics();
+      const typingData = getTypingDataForSubmission();
       
-      console.log('Submitting with typing metrics:', typingMetrics);
+      console.log('Submitting typing data:', {
+        intervalCount: typingData.intervals.length,
+        totalTime: typingData.totalTime,
+        thinkingTime: typingData.thinkingTime,
+        backspaceCount: typingData.backspaceCount,
+        pauseCount: typingData.pauseCount
+      });
 
       const response = await axios.post(`${API_BASE}/posts`, {
         content: newPost,
         tag: selectedTag,
-        typing_data: typingMetrics,
+        typing_data: typingData,
         space: 'pulse'
       }, {
         params: { session_id }
