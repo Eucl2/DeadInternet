@@ -1,4 +1,5 @@
-from statistics import stdev, StatisticsError
+import statistics
+from statistics import StatisticsError
 from typing import List
 
 class TypingAnalysisResult:
