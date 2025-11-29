@@ -27,7 +27,7 @@ class Config:
         """Validate that all required environment variables are set"""
         if not Config.RESEND_API_KEY:
             raise ValueError("RESEND_API_KEY environment variable is not set")
-        if Config.JWT_SECRET_KEY == "your-secret-key-change-in-production":
+        if Config.JWT_SECRET_KEY == "your-secret-key-change-in-production": # nosec: B105 - intentional sentinel value
             print("WARNING: Using default JWT_SECRET_KEY. Set JWT_SECRET_KEY environment variable in production!")
         print("Configuration loaded successfully")
 
