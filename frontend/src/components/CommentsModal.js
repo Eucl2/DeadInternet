@@ -21,7 +21,10 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
   const loadComments = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${baseUrl}/${postId}/comments`);
+      const token = localStorage.getItem('session_id');
+      const response = await axios.get(`${baseUrl}/${postId}/comments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setComments(response.data);
     } catch (error) {
       console.error('Failed to load comments:', error);
@@ -49,16 +52,16 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
 
     setSubmitting(true);
     try {
-      const session_id = localStorage.getItem('session_id');
+      const token = localStorage.getItem('session_id');
       const response = await axios.post(
         `${baseUrl}/${postId}/comments`,
         { content: newComment },
         {
-          params: { session_id }
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      setComments([ response.data, ...comments]);
+      setComments([response.data, ...comments]);
       setNewComment('');
     } catch (error) {
       console.error('Failed to post comment:', error);

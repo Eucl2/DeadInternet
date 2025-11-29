@@ -5,12 +5,15 @@ import models
 from database import get_db
 from schemas import CommentCreate, CreativePostResponse, ProgressPhotoResponse
 from analysis import analyze_typing_pattern, get_analysis_summary
+from auth import verify_access_token
 import os
 import secrets
 from pathlib import Path
 import json
+from fastapi.security import HTTPBearer
 
 router = APIRouter(prefix="/creative", tags=["creative"])
+security = HTTPBearer()
 
 # Image storage directory
 UPLOAD_DIR = Path("uploads/creative")
@@ -35,14 +38,9 @@ def save_image(file: UploadFile) -> str:
     
     return f"/uploads/creative/{unique_filename}"
 
-def get_current_user(session_id: str, db: Session):
-    """Get current user from session - imported from main to avoid circular import"""
-    from main import user_sessions
-    
-    if not session_id or session_id not in user_sessions:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    user_id = user_sessions[session_id]
+def get_current_user(credentials, db: Session):
+    """Get current user from JWT token"""
+    user_id = verify_access_token(credentials.credentials)
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -58,17 +56,17 @@ async def create_creative_post(
     final_image: Optional[UploadFile] = File(None),  # For Drawing/Photography
     progress_photos: List[UploadFile] = File(default=[]),
     progress_captions: Optional[str] = Form(None),  # JSON array of captions
-    session_id: str = Form(...),
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Create a new creative post with progress photos"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     # Validate category
     if category not in ['Writing', 'Drawing', 'Photography']:
         raise HTTPException(status_code=400, detail="Invalid category")
     
-    # Validate progress photos (must have 2-3) - to review
+    # Validate progress photos (must have 2-3)
     if category != 'Writing':
         if len(progress_photos) < 2 or len(progress_photos) > 3:
             raise HTTPException(
@@ -189,12 +187,9 @@ async def create_creative_post(
 @router.get("", response_model=List[CreativePostResponse])
 def get_creative_posts(
     category: Optional[str] = None,
-    session_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Get creative posts, optionally filtered by category"""
-    from main import user_sessions
-    
     query = db.query(models.CreativePost)
     
     # Filter by category
@@ -204,11 +199,6 @@ def get_creative_posts(
         query = query.filter(models.CreativePost.category == category)
     
     posts = query.order_by(models.CreativePost.created_at.desc()).all()
-    
-    # Check if user is authenticated to show like status
-    current_user_id = None
-    if session_id and session_id in user_sessions:
-        current_user_id = user_sessions[session_id]
     
     return [
         CreativePostResponse(
@@ -223,7 +213,7 @@ def get_creative_posts(
             created_at=post.created_at,
             like_count=post.like_count,
             comment_count=post.comment_count,
-            user_has_liked=any(like.user_id == current_user_id for like in post.likes) if current_user_id else False,
+            user_has_liked=False,
             progress_photos=[
                 ProgressPhotoResponse(
                     id=p.id,
@@ -241,21 +231,13 @@ def get_creative_posts(
 @router.get("/{post_id}", response_model=CreativePostResponse)
 def get_creative_post(
     post_id: int,
-    session_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Get a specific creative post"""
-    from main import user_sessions
-    
     post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
     
     if not post:
         raise HTTPException(status_code=404, detail="Creative post not found")
-    
-    # Check if user liked
-    current_user_id = None
-    if session_id and session_id in user_sessions:
-        current_user_id = user_sessions[session_id]
     
     return CreativePostResponse(
         id=post.id,
@@ -269,7 +251,7 @@ def get_creative_post(
         created_at=post.created_at,
         like_count=post.like_count,
         comment_count=post.comment_count,
-        user_has_liked=any(like.user_id == current_user_id for like in post.likes) if current_user_id else False,
+        user_has_liked=False,
         progress_photos=[
             ProgressPhotoResponse(
                 id=p.id,
@@ -286,11 +268,11 @@ def get_creative_post(
 @router.post("/{post_id}/like")
 def like_creative_post(
     post_id: int,
-    session_id: str,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Like a creative post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
     if not post:
@@ -315,11 +297,11 @@ def like_creative_post(
 @router.delete("/{post_id}/like")
 def unlike_creative_post(
     post_id: int,
-    session_id: str,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Unlike a creative post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     like = db.query(models.CreativeLike).filter(
         models.CreativeLike.user_id == user.id,
@@ -338,11 +320,11 @@ def unlike_creative_post(
 @router.delete("/{post_id}")
 def delete_creative_post(
     post_id: int,
-    session_id: str,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Delete own creative post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
     if not post:
@@ -378,12 +360,12 @@ def delete_creative_post(
 @router.post("/{post_id}/comments")
 def create_creative_comment(
     post_id: int,
-    session_id: str,
     comment: CommentCreate,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Create a comment on a creative post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
     if not post:

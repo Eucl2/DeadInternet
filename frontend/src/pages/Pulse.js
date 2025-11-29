@@ -43,9 +43,9 @@ const Pulse = ({ user }) => {
 
   const loadPosts = async () => {
     try {
-      const session_id = localStorage.getItem('session_id');
+      const token = localStorage.getItem('session_id');
       const response = await axios.get(`${API_BASE}/posts`, {
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setPosts(response.data);
     } catch (error) {
@@ -161,7 +161,7 @@ const Pulse = ({ user }) => {
     setLoading(true);
     
     try {
-      const session_id = localStorage.getItem('session_id');
+      const token = localStorage.getItem('session_id');
       const typingData = getTypingDataForSubmission();
       
       console.log('Submitting typing data:', {
@@ -178,7 +178,7 @@ const Pulse = ({ user }) => {
         typing_data: typingData,
         space: 'pulse'
       }, {
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       setPosts([response.data, ...posts]);
@@ -196,13 +196,13 @@ const Pulse = ({ user }) => {
   };
 
   const handleLikeToggle = async (postId, isLiked) => {
-    const session_id = localStorage.getItem('session_id');
+    const token = localStorage.getItem('session_id');
     
     try {
       const response = await axios({
         method: isLiked ? 'DELETE' : 'POST',
         url: `${API_BASE}/posts/${postId}/like`,
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       setPosts(posts.map(post => 
@@ -226,9 +226,9 @@ const Pulse = ({ user }) => {
     const postId = deleteModal.postId;
     
     try {
-      const session_id = localStorage.getItem('session_id');
+      const token = localStorage.getItem('session_id');
       await axios.delete(`${API_BASE}/posts/${postId}`, {
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       setPosts(posts.filter(post => post.id !== postId));

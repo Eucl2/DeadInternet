@@ -21,13 +21,16 @@ const Creative = ({ user }) => {
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const session_id = localStorage.getItem('session_id');
-      const params = { session_id };
+      const token = localStorage.getItem('session_id');
+      const config = {
+        headers: { Authorization: `Bearer ${token}` }
+      };
+      
       if (selectedCategory !== 'all') {
-        params.category = selectedCategory;
+        config.params = { category: selectedCategory };
       }
       
-      const response = await axios.get(`${API_BASE}/creative`, { params });
+      const response = await axios.get(`${API_BASE}/creative`, config);
       setPosts(response.data);
     } catch (error) {
       console.error('Failed to load creative posts:', error);
@@ -37,13 +40,13 @@ const Creative = ({ user }) => {
   };
 
   const handleLikeToggle = async (postId, isLiked) => {
-    const session_id = localStorage.getItem('session_id');
+    const token = localStorage.getItem('session_id');
     
     try {
       const response = await axios({
         method: isLiked ? 'DELETE' : 'POST',
         url: `${API_BASE}/creative/${postId}/like`,
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       setPosts(posts.map(post => 
@@ -95,9 +98,9 @@ const Creative = ({ user }) => {
     const postId = deleteModal.postId;
     
     try {
-      const session_id = localStorage.getItem('session_id');
+      const token = localStorage.getItem('session_id');
       await axios.delete(`${API_BASE}/creative/${postId}`, {
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       setPosts(posts.filter(post => post.id !== postId));

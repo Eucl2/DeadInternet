@@ -1,13 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
 from config import config
 from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCreate, PostResponse, CommentCreate, CommentResponse
-from auth import create_user, get_user_by_username, verify_password
+from auth import create_user, get_user_by_username, verify_password, create_access_token, verify_access_token
 import models
-import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 from analysis import analyze_typing_pattern, get_analysis_summary
@@ -15,11 +15,12 @@ from routers import creative
 from email_service import send_verification_email
 from auth import verify_email
 
-user_sessions = {}  # session_id -> user_id
+app = FastAPI(title="DeadInternet API", version="0.5.0")
 
-app = FastAPI(title="DeadInternet API", version="0.4.0")
+# Security scheme for JWT
+security = HTTPBearer()
 
-#Creative router
+# Creative router
 app.include_router(creative.router)
 
 # CORS
@@ -45,7 +46,7 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "version": "0.4.0"}
+    return {"status": "healthy", "version": "0.5.0"}
 
 @app.post("/auth/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -83,12 +84,11 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
             detail="Please verify your email before logging in"
         )
     
-    # Create session
-    session_id = secrets.token_urlsafe(32)
-    user_sessions[session_id] = user.id
+    # Create JWT token
+    access_token = create_access_token(user.id)
     
     return AuthResponse(
-        session_id=session_id,
+        session_id=access_token,
         user=UserResponse(
             id=user.id,
             username=user.username,
@@ -100,12 +100,12 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
 
 
 @app.put("/auth/update-username")
-def update_username(request: dict, db: Session = Depends(get_db)):
-    user_id = request.get("user_id")
+def update_username(request: dict, credentials = Depends(security), db: Session = Depends(get_db)):
+    user_id = verify_access_token(credentials.credentials)
     new_username = request.get("new_username")
     
-    if not user_id or not new_username:
-        raise HTTPException(status_code=400, detail="User ID and new username required")
+    if not new_username:
+        raise HTTPException(status_code=400, detail="New username required")
     
     existing_user = get_user_by_username(db, new_username)
 
@@ -125,12 +125,12 @@ def update_username(request: dict, db: Session = Depends(get_db)):
     }
 
 @app.put("/auth/set-name")
-def set_name(request: dict, db: Session = Depends(get_db)):
-    user_id = request.get("user_id")
+def set_name(request: dict, credentials = Depends(security), db: Session = Depends(get_db)):
+    user_id = verify_access_token(credentials.credentials)
     new_name = request.get("new_name")
 
-    if not user_id or not new_name:
-        raise HTTPException(status_code=400, detail="User ID and new name required")
+    if not new_name:
+        raise HTTPException(status_code=400, detail="New name required")
 
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
@@ -149,26 +149,22 @@ def set_name(request: dict, db: Session = Depends(get_db)):
     return {"message": "Name set successfully", "name": user.name}
 
 @app.get("/auth/validate-session", response_model=UserResponse)
-def validate_session(session_id: str, db: Session = Depends(get_db)):
-    """Validate session and return user data"""
-    user = get_current_user(session_id, db)
+def validate_session(credentials = Depends(security), db: Session = Depends(get_db)):
+    user = get_current_user(credentials, db)
     return user
 
 @app.post("/auth/logout")
-def logout(session_id: str):
-    """Logout and clear session"""
-    if session_id in user_sessions:
-        del user_sessions[session_id]
+def logout():
     return {"message": "Logged out successfully"}
 
 @app.post("/posts", response_model=PostResponse)
 def create_post(
     post: PostCreate,
-    session_id: str,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Create a new post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     # Analyze typing pattern if data provided
     analysis_result = None
@@ -226,13 +222,16 @@ def create_post(
     )
 
 @app.get("/posts", response_model=list[PostResponse])
-def get_posts(session_id: Optional[str] = None, db: Session = Depends(get_db)):
+def get_posts(credentials = Depends(security), db: Session = Depends(get_db)):
     """Get all posts for feed"""
     posts = db.query(models.Post).order_by(models.Post.created_at.desc()).all()
     
     current_user_id = None
-    if session_id and session_id in user_sessions:
-        current_user_id = user_sessions[session_id]
+    if credentials:
+        try:
+            current_user_id = verify_access_token(credentials.credentials)
+        except HTTPException:
+            pass
     
     return [
         PostResponse(
@@ -247,15 +246,9 @@ def get_posts(session_id: Optional[str] = None, db: Session = Depends(get_db)):
         ) for post in posts
     ]
 
-def get_current_user(session_id: str, db: Session = Depends(get_db)):
-    """Get current user from session"""
-    if not session_id or session_id not in user_sessions:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
-    
-    user_id = user_sessions[session_id]
+def get_current_user(credentials, db: Session = Depends(get_db)):
+    """Get current user from JWT token"""
+    user_id = verify_access_token(credentials.credentials)
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -265,9 +258,9 @@ def get_current_user(session_id: str, db: Session = Depends(get_db)):
     return user
 
 @app.post("/posts/{post_id}/like")
-def like_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
+def like_post(post_id: int, credentials = Depends(security), db: Session = Depends(get_db)):
     """Like a post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
@@ -290,9 +283,9 @@ def like_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
     return {"like_count": post.like_count}
 
 @app.delete("/posts/{post_id}/like")
-def unlike_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
+def unlike_post(post_id: int, credentials = Depends(security), db: Session = Depends(get_db)):
     """Unlike a post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     # Find the like
     like = db.query(models.Like).filter(
@@ -310,9 +303,9 @@ def unlike_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
     return {"like_count": post.like_count}
 
 @app.delete("/posts/{post_id}")
-def delete_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
+def delete_post(post_id: int, credentials = Depends(security), db: Session = Depends(get_db)):
     """Delete own post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
@@ -330,12 +323,12 @@ def delete_post(post_id: int, session_id: str, db: Session = Depends(get_db)):
 @app.post("/posts/{post_id}/comments", response_model=CommentResponse)
 def create_comment(
     post_id: int,
-    session_id: str,
     comment: CommentCreate,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Create a comment on a post"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
@@ -385,12 +378,9 @@ def get_comments(post_id: int, db: Session = Depends(get_db)):
     ]
 
 @app.put("/auth/update-bio")
-def update_bio(request: dict, db: Session = Depends(get_db)):
-    user_id = request.get("user_id")
+def update_bio(request: dict, credentials = Depends(security), db: Session = Depends(get_db)):
+    user_id = verify_access_token(credentials.credentials)
     new_bio = request.get("bio", "").strip()
-    
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID required")
     
     if len(new_bio) > 100:
         raise HTTPException(status_code=400, detail="Bio must be 100 characters or less")
@@ -434,15 +424,11 @@ def get_user_profile(username: str, db: Session = Depends(get_db)):
     }
 
 @app.delete("/auth/delete-account")
-def delete_account(session_id: str, db: Session = Depends(get_db)):
+def delete_account(credentials = Depends(security), db: Session = Depends(get_db)):
     """Delete account"""
-    user = get_current_user(session_id, db)
+    user = get_current_user(credentials, db)
     db.delete(user)
     db.commit()
-    
-    # Clear session
-    if session_id in user_sessions:
-        del user_sessions[session_id]
     
     return {"message": "Account deleted successfully"}
 

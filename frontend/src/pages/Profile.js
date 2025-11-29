@@ -38,9 +38,11 @@ const Profile = ({ user, onUserUpdate }) => {
     setUsernameSuccess('');
 
     try {
+      const token = localStorage.getItem('session_id');
       await axios.put(`${API_BASE}/auth/update-username`, {
-        user_id: user.id,
         new_username: newUsername
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       onUserUpdate({ ...user, username: newUsername });
@@ -62,9 +64,11 @@ const Profile = ({ user, onUserUpdate }) => {
     setNameSuccess('');
 
     try {
+      const token = localStorage.getItem('session_id');
       const response = await axios.put(`${API_BASE}/auth/set-name`, {
-        user_id: user.id,
         new_name: newName
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       onUserUpdate({ ...user, name: response.data.name });
@@ -91,9 +95,11 @@ const Profile = ({ user, onUserUpdate }) => {
     setBioSuccess('');
 
     try {
+      const token = localStorage.getItem('session_id');
       await axios.put(`${API_BASE}/auth/update-bio`, {
-        user_id: user.id,
         bio: newBio.trim()
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       onUserUpdate({ ...user, bio: newBio.trim() });
@@ -110,9 +116,9 @@ const Profile = ({ user, onUserUpdate }) => {
     setDeleteLoading(true);
     
     try {
-      const session_id = localStorage.getItem('session_id');
+      const token = localStorage.getItem('session_id');
       await axios.delete(`${API_BASE}/auth/delete-account`, {
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       localStorage.removeItem('session_id');

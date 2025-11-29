@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from email_service import generate_verification_token, get_token_expiry, send_verification_email
 import re
 from config import config
+import jwt
 
 def validate_password_strength(password: str) -> None:
     """Validate password strength without exposing it in API responses"""
@@ -97,3 +98,64 @@ def verify_email(db: Session, token: str) -> bool:
     db.refresh(user)
     
     return True
+
+#JWT
+
+def create_access_token(user_id: int) -> str:
+    """
+    Create a JWT access token for a user
+    
+    Args:
+        user_id: The user ID to encode in the token
+        
+    Returns:
+        JWT token string
+    """
+    expires = datetime.now(timezone.utc) + timedelta(hours=config.JWT_EXPIRATION_HOURS)
+    
+    payload = {
+        "user_id": user_id,
+        "exp": expires,
+        "iat": datetime.now(timezone.utc)
+    }
+    
+    # Encode and return token
+    token = jwt.encode(payload, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
+    return token
+
+
+def verify_access_token(token: str) -> int:
+    """
+    Verify a JWT access token and extract the user_id
+    
+    Args:
+        token: The JWT token string
+        
+    Returns:
+        user_id if token is valid
+        
+    Raises:
+        HTTPException: If token is invalid or expired
+    """
+    try:
+        payload = jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
+        user_id = payload.get("user_id")
+        
+        if user_id is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token: missing user_id"
+            )
+        
+        return user_id
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token has expired"
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token"
+        )

@@ -10,6 +10,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
 import SearchBar from './components/SearchBar';
+import ConfirmationModal from './components/ConfirmationModal';
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios'; 
@@ -23,6 +24,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
   const [user, setUser] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,8 +48,9 @@ function App() {
 
   const validateSession = async (session_id) => {
     try {
+      const token = localStorage.getItem('session_id');
       const response = await axios.get(`${API_BASE}/auth/validate-session`, {
-        params: { session_id }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
       console.log('Session valid, user restored:', response.data.username);
@@ -67,6 +70,7 @@ function App() {
   const handleSignOut = () => {
     localStorage.removeItem('session_id');
     setUser(null);
+    setShowLogoutModal(false);
     navigate('/');
   };
 
@@ -326,7 +330,7 @@ function App() {
               </Link>
 
               <button 
-                onClick={handleSignOut}
+                onClick={() => setShowLogoutModal(true)}
                 className="px-8 py-2 text-white hover:text-orange-500 transition-all duration-300 font-light tracking-wide"
               >
                 Sign Out
@@ -369,6 +373,18 @@ function App() {
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)}>
         <AuthForms onSuccess={handleAuthSuccess} initialMode={authMode} />
       </AuthModal>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showLogoutModal}
+        title="Confirm Sign Out"
+        message="You will be logged out of your account."
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        onConfirm={handleSignOut}
+        onCancel={() => setShowLogoutModal(false)}
+        isDangerous={false}
+      />
 
       {/* Routes */}
       <Routes>

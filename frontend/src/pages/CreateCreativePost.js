@@ -196,13 +196,12 @@ const CreateCreativePost = ({ user }) => {
     setError('');
 
     try {
-      const session_id = localStorage.getItem('session_id');
+      const token = localStorage.getItem('session_id');
       const formData = new FormData();
       
       formData.append('title', title);
       formData.append('description', description || '');
       formData.append('category', category);
-      formData.append('session_id', session_id);
 
       if (category === 'Writing') {
         formData.append('content', content);
@@ -232,7 +231,8 @@ const CreateCreativePost = ({ user }) => {
 
       const response = await axios.post(`${API_BASE}/creative`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         }
       });
 
