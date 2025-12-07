@@ -44,6 +44,12 @@ class Post(Base):
     analysis_flags = Column(JSON, nullable=True)  # List of red flags
     blocked_reason = Column(String(255), nullable=True)
     
+    # BERT ML Analysis
+    authenticity_score = Column(Float, nullable=True)  # 0-100
+    classification = Column(String(20), nullable=True)  # 'human', 'ambiguous', 'ai'
+    recommendation = Column(String(20), nullable=True)  # 'approve', 'flag', 'block'
+    bert_confidence = Column(Float, nullable=True)  # BERT's confidence %
+    
     #Content analysis
     content_analysis = Column(JSON, nullable=True)
     requires_review = Column(Boolean, default=False)  # Flagged for block orreview
@@ -107,6 +113,12 @@ class CreativePost(Base):
     analysis_decision = Column(String(20), nullable=True)  # approve, flag, block
     analysis_flags = Column(JSON, nullable=True)  # List of red flags
     blocked_reason = Column(String(255), nullable=True)
+    
+    # BERT ML Analysis
+    authenticity_score = Column(Float, nullable=True)  # 0-100
+    classification = Column(String(20), nullable=True)  # 'human', 'ambiguous', 'ai'
+    recommendation = Column(String(20), nullable=True)  # 'approve', 'flag', 'block'
+    bert_confidence = Column(Float, nullable=True)  # BERT's confidence %
     
     # Content analysis (for Writing category)
     content_analysis = Column(JSON, nullable=True)

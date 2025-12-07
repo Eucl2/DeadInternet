@@ -14,11 +14,20 @@ from analysis import analyze_typing_pattern, get_analysis_summary
 from routers import creative
 from email_service import send_verification_email
 from auth import verify_email
+from bert_inference import BERTInference, HybridContentScorer
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="DeadInternet API", version="0.5.0")
 
 # Security scheme for JWT
 security = HTTPBearer()
+
+# Global variables for BERT model
+bert_inference = None
+hybrid_scorer = None
 
 # Creative router
 app.include_router(creative.router)
@@ -37,8 +46,35 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("startup")
 def startup_event():
+    global bert_inference, hybrid_scorer
     config.validate()
     create_tables()
+    
+    try:
+        logger.info("Loading BERT model...")
+        print("\n=== STARTING BERT LOAD ===")
+        bert_inference = BERTInference(model_path='../ml_model/pulse_ml_model')
+        print("BERTInference created")
+        hybrid_scorer = HybridContentScorer(bert_inference)
+        print("HybridContentScorer created")
+        
+        # Pass hybrid_scorer to creative router
+        from routers import creative as creative_module
+        creative_module.set_hybrid_scorer(hybrid_scorer)
+        print("Creative router configured with BERT")
+        
+        logger.info("BERT model loaded successfully")
+        print("=== BERT LOAD COMPLETE ===\n")
+    except Exception as e:
+        print(f"\nBERT LOADING FAILED")
+        print(f"Error: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        print("=== END ERROR ===\n")
+        logger.error(f"Failed to load BERT model: {e}")
+        bert_inference = None
+        hybrid_scorer = None
+        logger.warning("Continuing without ML analysis")
 
 @app.get("/")
 def read_root():
@@ -204,6 +240,50 @@ def create_post(
         # Mark for review if flagged
         if analysis_result.decision == "flag":
             db_post.requires_review = True
+    
+    # Analyze with BERT
+    if hybrid_scorer:
+        try:
+            ml_analysis = hybrid_scorer.score_content(
+                text=post.content,
+                typing_metadata=typing_data_dict if post.typing_data else None
+            )
+            
+            # DEBUG
+            print(f"\n🔍 BERT ANALYSIS:")
+            print(f"  Content: {post.content[:50]}...")
+            print(f"  Full Analysis: {ml_analysis}")
+            print(f"  Recommendation: {ml_analysis['recommendation']}")
+            print(f"  Hybrid Score: {ml_analysis['hybrid_score']}")
+            
+            
+            # Store ML scores
+            db_post.authenticity_score = ml_analysis['hybrid_score']
+            db_post.classification = ml_analysis['classification']
+            db_post.recommendation = ml_analysis['recommendation']
+            db_post.bert_confidence = ml_analysis['bert_details']['human_probability']
+            
+            # block if AI-generated
+            if ml_analysis['recommendation'] == 'block':
+                db.rollback()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Post appears AI-generated (score: {ml_analysis['hybrid_score']:.1f}/100). Please rewrite with original content."
+                )
+            
+            # Mark for review if ambiguous
+            if ml_analysis['recommendation'] == 'flag':
+                db_post.requires_review = True
+            
+            logger.info(f"Post ML Analysis - Classification: {ml_analysis['classification']}, Score: {ml_analysis['hybrid_score']:.1f}/100")
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"BERT analysis error: {e}")
+            # Continue without ML if it fails
+    else:
+        logger.warning("BERT model not available, posting without ML analysis")
     
     db.add(db_post)
     db.commit()

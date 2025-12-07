@@ -11,9 +11,18 @@ import secrets
 from pathlib import Path
 import json
 from fastapi.security import HTTPBearer
+import logging
 
 router = APIRouter(prefix="/creative", tags=["creative"])
 security = HTTPBearer()
+logger = logging.getLogger(__name__)
+
+hybrid_scorer = None
+
+def set_hybrid_scorer(scorer):
+    """Called from main.py to set the hybrid_scorer"""
+    global hybrid_scorer
+    hybrid_scorer = scorer
 
 # Image storage directory
 UPLOAD_DIR = Path("uploads/creative")
@@ -53,13 +62,14 @@ async def create_creative_post(
     category: str = Form(...),
     content: Optional[str] = Form(None),  # For Writing
     typing_data: Optional[str] = Form(None),
+    paste_detected: Optional[str] = Form("false"),  # paste detection flag
     final_image: Optional[UploadFile] = File(None),  # For Drawing/Photography
     progress_photos: List[UploadFile] = File(default=[]),
     progress_captions: Optional[str] = Form(None),  # JSON array of captions
     credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
-    """Create a new creative post with progress photos"""
+    """Create a new creative post with progress photos and BERT analysis for Writing"""
     user = get_current_user(credentials, db)
     
     # Validate category
@@ -83,9 +93,14 @@ async def create_creative_post(
         if not final_image:
             raise HTTPException(status_code=400, detail="Final image required for Drawing/Photography")
     
-    # Analyze typing pattern for writing
+    # Convert paste_detected from string to bool
+    paste_detected_bool = paste_detected.lower() == "true"
+    
+    # Analyze typing pattern for writing (ONLY if paste isntt detected)
     analysis_result = None
-    if category == 'Writing' and typing_data:
+    typing_data_dict = None
+    
+    if category == 'Writing' and typing_data and not paste_detected_bool:
         try:
             typing_data_dict = json.loads(typing_data)
             analysis_result = analyze_typing_pattern(
@@ -96,7 +111,7 @@ async def create_creative_post(
             
             print(f"Creative Writing Analysis: {get_analysis_summary(analysis_result)}")
             
-            # Block if flagged
+            # Block if typing analysis says to block
             if analysis_result.decision == "block":
                 raise HTTPException(
                     status_code=400,
@@ -104,6 +119,8 @@ async def create_creative_post(
                 )
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid typing data format")
+    elif paste_detected_bool and category == 'Writing':
+        print(f"Creative Writing (PASTE): Skipping typing analysis, going directly to BERT")
     
     # Save final image if provided
     final_image_url = None
@@ -129,6 +146,49 @@ async def create_creative_post(
         
         if analysis_result.decision == "flag":
             db_post.requires_review = True
+    
+    # BERT ANALYSIS FOR WRITING
+    if category == 'Writing' and hybrid_scorer:
+        try:
+            ml_analysis = hybrid_scorer.score_content(
+                text=content,
+                typing_metadata=typing_data_dict if typing_data_dict else None
+            )
+            
+            # DEBUG
+            print(f"\n🔍 CREATIVE BERT ANALYSIS:")
+            print(f"  Content: {content[:50]}...")
+            print(f"  Paste Detected: {paste_detected_bool}")
+            print(f"  Hybrid Score: {ml_analysis['hybrid_score']}")
+            print(f"  Classification: {ml_analysis['classification']}")
+            print(f"  Recommendation: {ml_analysis['recommendation']}\n")
+            
+            # Store ML scores
+            db_post.authenticity_score = ml_analysis['hybrid_score']
+            db_post.classification = ml_analysis['classification']
+            db_post.recommendation = ml_analysis['recommendation']
+            db_post.bert_confidence = ml_analysis['bert_details']['human_probability']
+            
+            # bllock if AI-generated
+            if ml_analysis['recommendation'] == 'block':
+                db.rollback()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Content appears AI-generated (score: {ml_analysis['hybrid_score']:.1f}/100). Please rewrite with original content."
+                )
+            
+            if ml_analysis['recommendation'] == 'flag':
+                db_post.requires_review = True
+            
+            logger.info(f"Creative Writing ML Analysis - Classification: {ml_analysis['classification']}, Score: {ml_analysis['hybrid_score']:.1f}/100")
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"BERT analysis error in creative: {e}")
+            # Continue without ML if it fails
+    elif category == 'Writing':
+        logger.warning("BERT model not available for Creative Writing")
     
     db.add(db_post)
     db.flush()  # Get the ID without committing

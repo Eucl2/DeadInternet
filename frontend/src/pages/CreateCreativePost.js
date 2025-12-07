@@ -11,7 +11,7 @@ const CreateCreativePost = ({ user }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [content, setContent] = useState(''); // For Writing
-  const [finalImage, setFinalImage] = useState(null);
+  const [pasteDetected, setPasteDetected] = useState(false);
   const [finalImagePreview, setFinalImagePreview] = useState(null);
   const [progressPhotos, setProgressPhotos] = useState([null, null, null]);
   const [progressCaptions, setProgressCaptions] = useState(['', '', '']);
@@ -108,11 +108,18 @@ const CreateCreativePost = ({ user }) => {
     }));
   };
 
-  // const handlePaste = (e) => {
-  //   e.preventDefault();
-  //   setPasteMessage('Please type your creative work fresh!');
-  //   setTimeout(() => setPasteMessage(''), 4000);
-  // };
+  const handlePaste = (e) => {
+    setPasteDetected(true);
+    console.log('Paste detected - typing analysis will be skipped');
+  };
+  const handleInputChange = (e) => {
+    setContent(e.target.value);
+    // 'insertText' means manual typing, 'insertFromPaste' is paste
+    if (pasteDetected && e.nativeEvent.inputType === 'insertText') {
+      setPasteDetected(false);
+      console.log('User resumed typing - paste flag cleared');
+    }
+  };
 
   const calculateTypingMetrics = () => {
     const data = typingDataRef.current;
@@ -211,6 +218,9 @@ const CreateCreativePost = ({ user }) => {
         if (typingMetrics) {
           formData.append('typing_data', JSON.stringify(typingMetrics));
         }
+
+        formData.append('paste_detected', pasteDetected.toString());
+        console.log('Submitting Creative Writing:', { pasteDetected, typingMetrics: !!typingMetrics });
       }
 
       // Add final image for Drawing/Photography
@@ -367,10 +377,10 @@ const CreateCreativePost = ({ user }) => {
               <div>
                 <textarea
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   onFocus={handleFocus}
-                  //onPaste={handlePaste}
+                  onPaste={handlePaste}
                   placeholder="Write your creative piece..."
                   className="w-full bg-gray-800 border border-gray-700 rounded p-4 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
                   rows="12"
