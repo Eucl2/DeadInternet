@@ -53,7 +53,7 @@ class Post(Base):
     #Content analysis
     content_analysis = Column(JSON, nullable=True)
     requires_review = Column(Boolean, default=False)  # Flagged for block orreview
-    
+
     author = relationship("User", back_populates="posts")
     likes = relationship("Like", back_populates="post", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
@@ -123,6 +123,12 @@ class CreativePost(Base):
     # Content analysis (for Writing category)
     content_analysis = Column(JSON, nullable=True)
     requires_review = Column(Boolean, default=False)
+
+    # Art Analysis
+    art_ai_confidence = Column(Float, nullable=True)  # 0-1
+    art_classification = Column(String(20), nullable=True)  # 'human' or 'ai'
+    art_analysis = Column(JSON, nullable=True)  # Full analysis details
+    art_requires_review = Column(Boolean, default=False)
     
     # Relationships
     author = relationship("User", back_populates="creative_posts")

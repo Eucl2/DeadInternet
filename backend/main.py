@@ -15,6 +15,7 @@ from routers import creative
 from email_service import send_verification_email
 from auth import verify_email
 from bert_inference import BERTInference, HybridContentScorer
+from art_detection import ArtAuthenticityDetector
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -28,6 +29,7 @@ security = HTTPBearer()
 # Global variables for BERT model
 bert_inference = None
 hybrid_scorer = None
+art_detector = None
 
 # Creative router
 app.include_router(creative.router)
@@ -46,7 +48,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.on_event("startup")
 def startup_event():
-    global bert_inference, hybrid_scorer
+    global bert_inference, hybrid_scorer, art_detector
     config.validate()
     create_tables()
     
@@ -62,6 +64,14 @@ def startup_event():
         from routers import creative as creative_module
         creative_module.set_hybrid_scorer(hybrid_scorer)
         print("Creative router configured with BERT")
+
+        # Load art detector
+        logger.info("Loading art authenticity detector...")
+        print("Loading art detector...")
+        art_detector = ArtAuthenticityDetector(model_path='../../../artmodel/model.h5')
+        creative_module.set_art_detector(art_detector)
+        print("Creative router configured with art detector")
+        logger.info("Art detector loaded successfully")
         
         logger.info("BERT model loaded successfully")
         print("=== BERT LOAD COMPLETE ===\n")

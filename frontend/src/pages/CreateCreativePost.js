@@ -13,6 +13,7 @@ const CreateCreativePost = ({ user }) => {
   const [content, setContent] = useState(''); // For Writing
   const [pasteDetected, setPasteDetected] = useState(false);
   const [finalImagePreview, setFinalImagePreview] = useState(null);
+  const [finalImage, setFinalImage] = useState(null);
   const [progressPhotos, setProgressPhotos] = useState([null, null, null]);
   const [progressCaptions, setProgressCaptions] = useState(['', '', '']);
   const [loading, setLoading] = useState(false);

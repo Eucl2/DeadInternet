@@ -18,11 +18,18 @@ security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
 hybrid_scorer = None
+art_detector = None
 
 def set_hybrid_scorer(scorer):
     """Called from main.py to set the hybrid_scorer"""
     global hybrid_scorer
     hybrid_scorer = scorer
+
+
+def set_art_detector(detector):
+    """Called from main.py to set the art_detector"""
+    global art_detector
+    art_detector = detector
 
 # Image storage directory
 UPLOAD_DIR = Path("uploads/creative")
@@ -189,9 +196,52 @@ async def create_creative_post(
             # Continue without ML if it fails
     elif category == 'Writing':
         logger.warning("BERT model not available for Creative Writing")
-    
+
+    # ART ANALYSIS FOR DRAWING AND PHOTOGRAPHY
+    if category in ['Drawing', 'Photography'] and final_image_url and art_detector:
+        try:
+            # Remove leading slash from URL to get file path
+            image_file_path = final_image_url.lstrip('/')
+            
+            art_analysis = art_detector.analyze(image_file_path)
+            
+            # DEBUGging 
+            print(f"\nCREATIVE ART ANALYSIS:")
+            print(f"  Category: {category}")
+            print(f"  Classification: {art_analysis['classification']}")
+            print(f"  AI Confidence: {art_analysis['ai_confidence']:.1%}")
+            print(f"  Recommendation: {art_analysis['recommendation']}\n")
+            
+            # Store art analysis
+            db_post.art_classification = art_analysis['classification']
+            db_post.art_ai_confidence = art_analysis['ai_confidence']
+            db_post.art_analysis = art_analysis
+            
+            # Block if likely AI
+            if art_analysis['recommendation'] == 'block':
+                db.rollback()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Artwork appears AI-generated (confidence: {art_analysis['ai_confidence']:.1%}). Please upload original artwork."
+                )
+            
+            if art_analysis['recommendation'] == 'flag':
+                db_post.art_requires_review = True
+            
+            logger.info(f"Creative Art Analysis - Classification: {art_analysis['classification']}")
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Art detection analysis error in creative: {e}")
+            
+            # Continue without analysis if it fails
+    elif category == 'Drawing':
+        logger.warning("Art detector not available for Drawing")
+
+
     db.add(db_post)
-    db.flush()  # Get the ID without committing
+    db.flush()
     
     # Parse progress captions
     captions_list = []
