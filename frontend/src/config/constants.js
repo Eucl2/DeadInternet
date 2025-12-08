@@ -12,6 +12,10 @@ export const AVAILABLE_TAGS = [
 ];
 
 export const POST_LIMITS = {
-  MAX_LENGTH: 500,
+  MAX_LENGTH: 280,
   PASTE_MESSAGE_DURATION: 4000
+};
+
+export const COMMENT_LIMITS = {
+  MAX_LENGTH: 280
 };

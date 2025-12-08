@@ -230,7 +230,7 @@ function App() {
                 Anonymous daily questions creating data visualizations of collective human experience and wisdom.
               </p>
               <div className="text-sm text-gray-500 uppercase tracking-widest font-light">
-                Daily Reflection • Anonymous • Collective Intelligence
+                Daily Reflection • Anonymous • Data Visualizations
               </div>
             </div>
           </div>

@@ -49,10 +49,10 @@ class BERTInference:
             ).to(device)
             
             self.model.eval()
-            logger.info("✅ Model loaded successfully")
+            logger.info("Model loaded successfully")
             
         except Exception as e:
-            logger.error(f"❌ Failed to load model: {e}")
+            logger.error(f"Failed to load model: {e}")
             raise
     
     def predict(self, text: str, return_confidence: bool = True) -> Dict:

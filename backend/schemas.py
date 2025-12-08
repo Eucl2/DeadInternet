@@ -47,7 +47,7 @@ class TypingData(BaseModel):
     intervals: List[int]
 
 class PostCreate(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=280)
     tag: str = "Thoughts"
     typing_data: Optional[TypingData] = None
     space: str = "pulse"
@@ -120,7 +120,7 @@ class CreativePostResponse(BaseModel):
     analysis_decision: Optional[str] = None  # For Writing
     
 class CommentCreate(BaseModel):
-    content: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1, max_length=280)
 
 class CommentResponse(BaseModel):
     id: int

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { API_BASE } from '../config/constants';
 import { formatTimestamp } from '../utils/timeUtils';
+import { API_BASE, COMMENT_LIMITS } from '../config/constants';
 
 const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const maxCommentLength = 200;
 
   const baseUrl = isCreative ? `${API_BASE}/creative` : `${API_BASE}/posts`;
 
@@ -35,7 +34,7 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
 
   const handleCommentChange = (e) => {
     const text = e.target.value;
-    if (text.length <= maxCommentLength) {
+    if (text.length <= COMMENT_LIMITS.MAX_LENGTH) {
       setNewComment(text);
     }
   };
@@ -45,8 +44,8 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
     
     if (!newComment.trim()) return;
     
-    if (newComment.length > maxCommentLength) {
-      alert(`Comment must be ${maxCommentLength} characters or less`);
+    if (newComment.length > COMMENT_LIMITS.MAX_LENGTH) {
+      alert(`Comment must be ${COMMENT_LIMITS.MAX_LENGTH} characters or less`);
       return;
     }
 
@@ -98,10 +97,10 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
             placeholder="Write a comment..."
             className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none break-words whitespace-normal"
             rows="3"
-            maxLength={maxCommentLength}
+            maxLength={COMMENT_LIMITS.MAX_LENGTH}
           />
           <div className="flex justify-between items-center mt-3">
-            <span className="text-xs text-gray-500">{newComment.length}/{maxCommentLength}</span>
+            <span className="text-xs text-gray-500">{newComment.length}/{COMMENT_LIMITS.MAX_LENGTH}</span>
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
