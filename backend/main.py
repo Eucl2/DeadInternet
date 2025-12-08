@@ -68,7 +68,7 @@ def startup_event():
         # Load art detector
         logger.info("Loading art authenticity detector...")
         print("Loading art detector...")
-        art_detector = ArtAuthenticityDetector(model_path='../../../artmodel/model.h5')
+        art_detector = ArtAuthenticityDetector(model_path='../ml_model/art_model/model.h5')
         creative_module.set_art_detector(art_detector)
         print("Creative router configured with art detector")
         logger.info("Art detector loaded successfully")

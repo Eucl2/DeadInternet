@@ -59,9 +59,9 @@ class ArtAuthenticityDetector:
                 compile=False,
                 custom_objects={"Dense": CustomDenseLayers.tf_wrapper}
             )
-            logger.info("✅ Art authenticity detector loaded successfully")
+            logger.info("Art authenticity detector loaded successfully")
         except Exception as e:
-            logger.error(f"❌ Failed to load art detection model: {e}")
+            logger.error(f"Failed to load art detection model: {e}")
             self.model = None
     
     @staticmethod
