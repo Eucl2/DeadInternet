@@ -6,6 +6,7 @@ import ViewProfile from './pages/ViewProfile';
 import Creative from './pages/Creative';
 import CreateCreativePost from './pages/CreateCreativePost';
 import VerifyEmail from './pages/VerifyEmail';
+import Sparks from './pages/Sparks';
 
 import AuthModal from './components/AuthModal';
 import AuthForms from './components/AuthForms';
@@ -322,9 +323,9 @@ function App() {
               <Link to="/creative" className="text-white hover:text-orange-500 transition-colors">
                 Creative
               </Link>
-              <button className="text-white hover:text-orange-500 transition-colors">
+              <Link to="/sparks" className="text-white hover:text-orange-500 transition-colors">
                 Sparks
-              </button>
+              </Link>
               <Link to="/profile" className="text-white hover:text-orange-500 transition-colors">
                 Profile
               </Link>
@@ -418,6 +419,11 @@ function App() {
         <Route 
           path="/verify-email" 
           element={<VerifyEmail />} 
+        />
+
+        <Route 
+          path="/sparks" 
+          element={user ? <Sparks user={user} /> : <Navigate to="/" replace />} 
         />
 
       </Routes>

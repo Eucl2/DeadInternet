@@ -130,3 +130,34 @@ class CommentResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+
+# Sparks Schemas
+# Sparks Schemas
+class SparkResponseCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=280)
+
+class SparkResponseRead(BaseModel):
+    id: int
+    content: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class SparkRead(BaseModel):
+    id: int
+    question: str
+    date: str
+    created_at: datetime
+    responses: List[SparkResponseRead] = []
+    total_responses: int = 0
+    user_has_responded: bool = False
+    stats: Optional[dict] = None
+    
+    class Config:
+        from_attributes = True
+    
+    class Config:
+        from_attributes = True

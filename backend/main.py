@@ -5,15 +5,14 @@ from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
 from config import config
-from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCreate, PostResponse, CommentCreate, CommentResponse
-from auth import create_user, get_user_by_username, verify_password, create_access_token, verify_access_token
+from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCreate, PostResponse, CommentCreate, CommentResponse, SparkRead, SparkResponseCreate, SparkResponseRead
 import models
 from datetime import datetime, timedelta
 from typing import Optional
 from analysis import analyze_typing_pattern, get_analysis_summary
-from routers import creative
+from routers import creative, sparks
 from email_service import send_verification_email
-from auth import verify_email
+from auth import create_user, get_user_by_username, verify_password, create_access_token, verify_access_token, verify_email, get_current_user
 from bert_inference import BERTInference, HybridContentScorer
 from art_detection import ArtAuthenticityDetector
 import logging
@@ -33,6 +32,9 @@ art_detector = None
 
 # Creative router
 app.include_router(creative.router)
+
+# Sparkss router  
+app.include_router(sparks.router)
 
 # CORS
 app.add_middleware(
@@ -336,16 +338,16 @@ def get_posts(credentials = Depends(security), db: Session = Depends(get_db)):
         ) for post in posts
     ]
 
-def get_current_user(credentials, db: Session = Depends(get_db)):
-    """Get current user from JWT token"""
-    user_id = verify_access_token(credentials.credentials)
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    return user
+#def get_current_user(credentials, db: Session = Depends(get_db)):
+#    """Get current user from JWT token"""
+#    user_id = verify_access_token(credentials.credentials)
+#    user = db.query(models.User).filter(models.User.id == user_id).first()
+#    if not user:
+#        raise HTTPException(
+#            status_code=status.HTTP_404_NOT_FOUND,
+#            detail="User not found"
+#        )
+#    return user
 
 @app.post("/posts/{post_id}/like")
 def like_post(post_id: int, credentials = Depends(security), db: Session = Depends(get_db)):

@@ -35,6 +35,17 @@ def get_user_by_username(db: Session, username: str) -> User:
     """Get user by username"""
     return db.query(User).filter(User.username == username).first()
 
+def get_current_user(credentials, db: Session):
+    """Get current user from JWT token"""
+    user_id = verify_access_token(credentials.credentials)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+    return user
+
 def create_user(db: Session, user: UserCreate, frontend_url: str = None) -> User:
     """Create a new user in the database and send verification email"""
     

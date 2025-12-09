@@ -188,3 +188,30 @@ class CreativeComment(Base):
     
     creative_post = relationship("CreativePost", back_populates="comments")
     author = relationship("User")
+
+class Spark(Base):
+    __tablename__ = "sparks"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    question = Column(Text, nullable=False)
+    date = Column(String(10), unique=True, index=True)  # YYYY-MM-DD
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    responses = relationship("SparkResponse", back_populates="spark", cascade="all, delete-orphan")
+    
+    @property
+    def response_count(self):
+        return len(self.responses)
+
+
+class SparkResponse(Base):
+    __tablename__ = "spark_responses"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    spark_id = Column(Integer, ForeignKey("sparks.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    spark = relationship("Spark", back_populates="responses")
+    user = relationship("User")

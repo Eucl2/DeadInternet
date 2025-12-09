@@ -19,3 +19,7 @@ export const POST_LIMITS = {
 export const COMMENT_LIMITS = {
   MAX_LENGTH: 280
 };
+
+export const SPARK_LIMITS = {
+  MAX_LENGTH: 280
+};
