@@ -94,7 +94,7 @@ function App() {
         }}
       />
 
-      {/* Hero Section */}
+      {/* Main Section */}
       <section className="px-12 py-32 text-center">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-8xl font-extralight mb-12 leading-none tracking-tighter">
@@ -103,7 +103,7 @@ function App() {
           <p className="text-3xl mb-12 text-gray-300 font-extralight max-w-5xl mx-auto leading-relaxed tracking-wide">
             The only social media platform where every word, image, and moment is created by verified humans
           </p>
-          <div className="bg-gradient-to-r from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-10 mb-16 max-w-4xl mx-auto text-left shadow-2xl">
+          <div className="bg-gradient-to-r from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-10 mb-8 max-w-4xl mx-auto text-left shadow-2xl">
             <p className="text-xl text-orange-500 font-medium mb-3 tracking-wide">
               ZERO AI-GENERATED CONTENT
             </p>
@@ -111,7 +111,7 @@ function App() {
               No bots. No synthetic content. Just pure human connection in a digital world drowning in artificial noise.
             </p>
           </div>
-          <button 
+          {/* <button 
             onClick={() => {
               setAuthMode('register');
               setShowAuthModal(true);
@@ -119,7 +119,7 @@ function App() {
             className="px-16 py-5 bg-gradient-to-r from-orange-500 to-orange-600 text-black text-xl font-medium rounded-sm hover:from-orange-400 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 shadow-xl tracking-wide"
           >
             Enter Human Zone
-          </button>
+          </button> */}
         </div>
       </section>
 
@@ -257,9 +257,14 @@ function App() {
             >
               Create Account
             </button>
-            <button className="px-16 py-5 border-2 border-orange-500 text-orange-500 text-xl font-medium rounded-sm hover:bg-gradient-to-r hover:from-orange-500 hover:to-orange-600 hover:text-black transition-all duration-300 tracking-wide">
-              Learn More
-            </button>
+            <a 
+              href="https://buymeacoffee.com/andrebarbosa" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-16 py-5 border-2 border-gray-500 text-gray-300 text-xl font-medium rounded-sm hover:border-orange-500 hover:text-orange-500 transition-all duration-300 tracking-wide"
+            >
+              Support The Project
+            </a>
             <a 
               href="https://forms.gle/on2gavc32gFQWYHQ7" 
               target="_blank" 
@@ -283,14 +288,22 @@ function App() {
             </div>
             <div className="flex space-x-10 text-sm text-gray-400">
               <a href="#" className="hover:text-orange-500 transition-colors tracking-wide">About</a>
-              <a href="#" className="hover:text-orange-500 transition-colors tracking-wide">Privacy Policy</a>
-              <a href="#" className="hover:text-orange-500 transition-colors tracking-wide">Terms of Service</a>
+              {/* <a href="#" className="hover:text-orange-500 transition-colors tracking-wide">Privacy Policy</a> */}
+              {/* <a href="#" className="hover:text-orange-500 transition-colors tracking-wide">Terms of Service</a> */}
               <a href="#" className="hover:text-orange-500 transition-colors tracking-wide">Contact</a>
               <a href="#" className="hover:text-orange-500 transition-colors tracking-wide">Documentation</a>
+              <a 
+                href="https://buymeacoffee.com/andrebarbosa" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-orange-500 transition-colors tracking-wide"
+              >
+                Support
+              </a>
             </div>
           </div>
           <div className="text-center text-xs text-gray-600 pt-8 border-t border-gray-800">
-            <p className="tracking-wide">© 2025 DeadInternet Network.</p>
+            <p className="tracking-wide">2025 DeadInternet Network</p>
           </div>
         </div>
       </footer>
@@ -336,6 +349,17 @@ function App() {
               >
                 Sign Out
               </button>
+
+              <a 
+                href="https://buymeacoffee.com/andrebarbosa" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-xs text-gray-500 hover:text-orange-500 transition-colors tracking-wide"
+              >
+                Support
+              </a>
+
+
               <a 
                 href="https://forms.gle/on2gavc32gFQWYHQ7" 
                 target="_blank" 
