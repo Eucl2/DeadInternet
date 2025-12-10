@@ -78,7 +78,30 @@ async def create_creative_post(
 ):
     """Create a new creative post with progress photos and BERT analysis for Writing"""
     user = get_current_user(credentials, db)
+
+    # Validate title length
+    if not title or len(title.strip()) == 0:
+        raise HTTPException(status_code=400, detail="Title is required")
+    if len(title) > 100:
+        raise HTTPException(status_code=400, detail="Title must be 100 characters or less")
     
+    # Validate description length
+    if description and len(description) > 280:
+        raise HTTPException(status_code=400, detail="Description must be 280 characters or less")
+    
+    # Validate captions length
+    if progress_captions:
+        try:
+            captions_list = json.loads(progress_captions)
+            for i, caption in enumerate(captions_list):
+                if caption and len(caption) > 100:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Caption {i+1} must be 100 characters or less"
+                    )
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid captions format")
+
     # Validate category
     if category not in ['Writing', 'Drawing', 'Photography']:
         raise HTTPException(status_code=400, detail="Invalid category")

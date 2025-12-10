@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatTimestamp } from '../utils/timeUtils';
 import { API_BASE } from '../config/constants';
+import ImageViewer from './ImageViewer';
 
 const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, onViewComments }) => {
+  const [viewingImage, setViewingImage] = useState(false);
+
   const getCategoryColor = (category) => {
     const colors = {
       'Writing': 'bg-blue-500',
@@ -26,7 +29,8 @@ const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, 
           <img
             src={`${API_BASE}${post.final_image_url}`}
             alt={post.title}
-            className="w-full aspect-video object-cover"
+            className="w-full aspect-video object-cover cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => setViewingImage(true)}
           />
           
           {/* AI Confidence Badge */}
@@ -131,6 +135,15 @@ const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, 
           </button>
         </div>
       </div>
+
+      {/* Image Viewer Modal */}
+      {viewingImage && (
+        <ImageViewer
+          imageUrl={post.final_image_url}
+          title={post.title}
+          onClose={() => setViewingImage(false)}
+        />
+      )}
     </div>
   );
 };

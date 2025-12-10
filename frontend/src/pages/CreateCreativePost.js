@@ -356,6 +356,7 @@ const CreateCreativePost = ({ user }) => {
                         setProgressCaptions(newCaptions);
                       }}
                       className="w-full mt-2 bg-gray-800 border border-gray-700 rounded p-2 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none text-sm"
+                      maxLength={100}
                     />
                   )}
                 </div>
@@ -429,25 +430,36 @@ const CreateCreativePost = ({ user }) => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Title *</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm text-gray-400">Title *</label>
+                  <span className={`text-xs ${title.length > 100 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {title.length}/100
+                  </span>
+                </div>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Give your work a title"
                   className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
-                  maxLength={200}
+                  maxLength={100}
                 />
               </div>
               
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Description (optional)</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm text-gray-400">Description (optional)</label>
+                  <span className={`text-xs ${description.length > 280 ? 'text-red-500' : 'text-gray-500'}`}>
+                    {description.length}/280
+                  </span>
+                </div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Tell us about your creative process..."
                   className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
                   rows="4"
+                  maxLength={280}
                 />
               </div>
             </div>
