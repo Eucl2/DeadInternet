@@ -52,7 +52,17 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 def startup_event():
     global bert_inference, hybrid_scorer, art_detector
     config.validate()
-    create_tables()
+
+    try:
+        print("\n🗄️ Creating database tables...")
+        create_tables()
+        print("Database tables created successfully!")
+    except Exception as e:
+        print(f"CRITICAL: Failed to create database tables!")
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
     
     try:
         logger.info("Loading BERT model...")
