@@ -1,7 +1,8 @@
 import React from 'react';
 import { formatTimestamp } from '../utils/timeUtils';
 import { API_BASE } from '../config/constants';
-  const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, onViewComments }) => {
+
+const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, onViewComments }) => {
   const getCategoryColor = (category) => {
     const colors = {
       'Writing': 'bg-blue-500',
@@ -21,11 +22,31 @@ import { API_BASE } from '../config/constants';
           </p>
         </div>
       ) : (
-        <img
-          src={`${API_BASE}${post.final_image_url}`}
-          alt={post.title}
-          className="w-full aspect-video object-cover"
-        />
+        <div className="relative overflow-hidden group">
+          <img
+            src={`${API_BASE}${post.final_image_url}`}
+            alt={post.title}
+            className="w-full aspect-video object-cover"
+          />
+          
+          {/* AI Confidence Badge */}
+          {post.art_ai_confidence !== null && post.art_ai_confidence !== undefined && (
+            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="relative">
+                <button
+                  className="peer bg-gray-900/90 backdrop-blur-sm border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 hover:bg-gray-800 transition-colors"    
+                >
+                  {Math.round(100 - post.art_ai_confidence * 100)}%
+                </button>
+                
+                {/* Tooltip on hover */}
+                <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg p-3 text-xs text-gray-300 pointer-events-none opacity-0 peer-hover:opacity-100 transition-opacity z-10 whitespace-normal">
+                  We are {100 - Math.round(post.art_ai_confidence * 100)}% sure this image is not AI generated
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Post Info */}
@@ -37,19 +58,19 @@ import { API_BASE } from '../config/constants';
           
           {/* Progress Dots */}
           {post.progress_photos.length > 0 && (
-          <button
-            onClick={() => onViewProgress(post)}
-            className="flex items-center space-x-1 hover:opacity-70 transition-opacity"
-          >
-            {post.progress_photos.map((_, index) => (
-              <div
-                key={index}
-                className="w-2 h-2 rounded-full bg-orange-500"
-              />
-            ))}
-            <span className="text-xs text-gray-500 ml-2">Check Progress Photos</span>
-          </button>
-        )}
+            <button
+              onClick={() => onViewProgress(post)}
+              className="flex items-center space-x-1 hover:opacity-70 transition-opacity"
+            >
+              {post.progress_photos.map((_, index) => (
+                <div
+                  key={index}
+                  className="w-2 h-2 rounded-full bg-orange-500"
+                />
+              ))}
+              <span className="text-xs text-gray-500 ml-2">Check Progress Photos</span>
+            </button>
+          )}
         </div>
 
         <h3 className="text-xl font-light text-white mb-2">{post.title}</h3>

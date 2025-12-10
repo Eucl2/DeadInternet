@@ -110,7 +110,7 @@ class ArtAuthenticityDetector:
             human_confidence = 1.0 - ai_confidence
             
             # Classify based on confidence thresholds
-            if ai_confidence > 0.65:
+            if ai_confidence > 0.64:
                 classification = "ai"
                 recommendation = "block"
             elif ai_confidence > 0.5:

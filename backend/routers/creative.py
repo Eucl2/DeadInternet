@@ -291,7 +291,8 @@ async def create_creative_post(
             ) for p in db_post.progress_photos
         ],
         human_score=db_post.human_score,
-        analysis_decision=db_post.analysis_decision
+        analysis_decision=db_post.analysis_decision,
+        art_ai_confidence=db_post.art_ai_confidence
     )
 
 @router.get("", response_model=List[CreativePostResponse])
@@ -334,7 +335,8 @@ def get_creative_posts(
                 ) for p in post.progress_photos
             ],
             human_score=post.human_score,
-            analysis_decision=post.analysis_decision
+            analysis_decision=post.analysis_decision,
+            art_ai_confidence=post.art_ai_confidence
         ) for post in posts
     ]
 
@@ -372,7 +374,8 @@ def get_creative_post(
             ) for p in post.progress_photos
         ],
         human_score=post.human_score,
-        analysis_decision=post.analysis_decision
+        analysis_decision=post.analysis_decision,
+        art_ai_confidence=post.art_ai_confidence
     )
 
 @router.post("/{post_id}/like")

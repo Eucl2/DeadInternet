@@ -118,6 +118,7 @@ class CreativePostResponse(BaseModel):
     progress_photos: List[ProgressPhotoResponse] = []
     human_score: Optional[float] = None  # For Writing
     analysis_decision: Optional[str] = None  # For Writing
+    art_ai_confidence: Optional[float] = None  # For Drawing/Photography
     
 class CommentCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=280)

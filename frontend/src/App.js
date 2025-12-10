@@ -245,7 +245,8 @@ function App() {
             Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">Human</span> Network
           </h2>
           <p className="text-2xl text-gray-300 mb-16 leading-relaxed font-light tracking-wide">
-            In a world where authenticity is becoming extinct, genuine human connection is the most radical act.
+            In a world where authenticity is becoming extinct,
+            join a place where it is guaranteed.
           </p>
           <div className="flex flex-col sm:flex-row gap-8 justify-center">
             <button 
