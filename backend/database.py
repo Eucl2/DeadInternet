@@ -8,14 +8,14 @@ from models import Base
 load_dotenv()
 
 # Check if running on Render (production)
-if os.getenv("RENDER") == "true":  # Changed this line
+if os.getenv("RENDER") == "true":
     # PostgreSQL for production
     USER = os.getenv("user")
     PASSWORD = os.getenv("password")
     HOST = os.getenv("host")
     PORT = os.getenv("port")
     DBNAME = os.getenv("dbname")
-    DATABASE_URL = f"postgresql+psycopg2://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
+    DATABASE_URL = f"postgresql+psycopg://{USER}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}?sslmode=require"
 else:
     # SQLite for local development
     DATABASE_URL = "sqlite:///./deadinternet.db"
