@@ -30,7 +30,7 @@ const ImageViewer = ({ imageUrl, title, onClose }) => {
         {/* Image */}
         <div className="relative bg-black">
           <img
-            src={`${API_BASE}${imageUrl}`}
+            src={imageUrl.startsWith('http') ? imageUrl : `${API_BASE}${imageUrl}`}
             alt={title}
             className="w-full max-h-[60vh] object-contain"
           />
