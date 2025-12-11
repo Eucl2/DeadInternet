@@ -27,7 +27,7 @@ const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, 
       ) : (
         <div className="relative overflow-hidden group">
           <img
-            src={`${API_BASE}${post.final_image_url}`}
+            src={post.final_image_url.startsWith('http') ? post.final_image_url : `${API_BASE}${post.final_image_url}`}
             alt={post.title}
             className="w-full aspect-video object-cover cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => setViewingImage(true)}
@@ -139,7 +139,7 @@ const CreativePostCard = ({ post, user, onLikeToggle, onViewProgress, onDelete, 
       {/* Image Viewer Modal */}
       {viewingImage && (
         <ImageViewer
-          imageUrl={post.final_image_url}
+          imageUrl={post.final_image_url.startsWith('http') ? post.final_image_url : `${API_BASE}${post.final_image_url}`}
           title={post.title}
           onClose={() => setViewingImage(false)}
         />

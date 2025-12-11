@@ -54,11 +54,11 @@ def startup_event():
     config.validate()
 
     try:
-        print("\n🗄️ Creating database tables...")
+        print("\nCreating database tables...")
         create_tables()
         print("Database tables created successfully!")
     except Exception as e:
-        print(f"CRITICAL: Failed to create database tables!")
+        print(f"Error: Failed to create database tables!")
         print(f"Error: {e}")
         import traceback
         traceback.print_exc()

@@ -42,7 +42,7 @@ const ProgressViewer = ({ post, onClose }) => {
         {/* Image */}
         <div className="relative bg-black">
           <img
-            src={`${API_BASE}${currentPhoto.image_url}`}
+            src={currentPhoto.image_url.startsWith('http') ? currentPhoto.image_url : `${API_BASE}${currentPhoto.image_url}`}
             alt={`Progress ${currentIndex + 1}`}
             className="w-full max-h-[60vh] object-contain"
           />
