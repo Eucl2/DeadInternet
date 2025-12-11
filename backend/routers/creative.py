@@ -128,7 +128,7 @@ async def create_creative_post(
     # Convert paste_detected from string to bool
     paste_detected_bool = paste_detected.lower() == "true"
     
-    # Analyze typing pattern for writing (ONLY if paste isntt detected)
+    # Analyze typing pattern for writing (ONLY if paste isn't detected)
     analysis_result = None
     typing_data_dict = None
     
@@ -154,10 +154,16 @@ async def create_creative_post(
     elif paste_detected_bool and category == 'Writing':
         print(f"Creative Writing (PASTE): Skipping typing analysis, going directly to BERT")
     
-    # Save final image if provided
+    # Save final image if provided (read once, reuse bytes)
     final_image_url = None
+    final_image_data = None
     if final_image:
-        final_image_url = save_image(final_image)
+        final_image_data = final_image.file.read()
+        final_image.file.seek(0)
+        final_image_url = upload_image(final_image_data, final_image.filename)
+        
+        if not final_image_url:
+            raise HTTPException(status_code=500, detail="Failed to upload image")
     
     # Create creative post
     db_post = models.CreativePost(
@@ -223,14 +229,11 @@ async def create_creative_post(
         logger.warning("BERT model not available for Creative Writing")
 
     # ART ANALYSIS FOR DRAWING AND PHOTOGRAPHY
-    if category in ['Drawing', 'Photography'] and final_image_url and art_detector:
+    if category in ['Drawing', 'Photography'] and final_image_url and art_detector and final_image_data:
         try:
-            # Remove leading slash from URL to get file path
-            image_file_path = final_image_url.lstrip('/')
+            art_analysis = art_detector.analyze_bytes(final_image_data)
             
-            art_analysis = art_detector.analyze(image_file_path)
-            
-            # DEBUGging 
+            # DEBUGg
             print(f"\nCREATIVE ART ANALYSIS:")
             print(f"  Category: {category}")
             print(f"  Classification: {art_analysis['classification']}")
@@ -259,7 +262,6 @@ async def create_creative_post(
             raise
         except Exception as e:
             logger.error(f"Art detection analysis error in creative: {e}")
-            
             # Continue without analysis if it fails
     elif category == 'Drawing':
         logger.warning("Art detector not available for Drawing")
@@ -472,7 +474,7 @@ def delete_creative_post(
     if post.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
     
-   # Delete associated images from Supabase
+    # Delete associated images from Supabase
     if post.final_image_url:
         delete_image(post.final_image_url)
     

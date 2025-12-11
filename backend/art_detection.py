@@ -9,6 +9,7 @@ from tensorflow.keras.models import load_model
 from PIL import Image
 import logging
 from pathlib import Path
+from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,31 @@ class ArtAuthenticityDetector:
             logger.error(f"Error processing image {image_path}: {e}")
             raise
     
+    @staticmethod
+    def process_image_bytes(file_bytes: bytes) -> np.ndarray:
+        """
+        Preprocess image from bytes for model inference
+        - Converts to RGB
+        - Resizes to 256x256
+        - Uses raw pixel values (0-255)
+        
+        Args:
+            file_bytes: Raw image bytes
+            
+        Returns:
+            Preprocessed image array ready for inference
+        """
+        try:
+            img = Image.open(BytesIO(file_bytes))
+            img = img.convert('RGB')
+            img = img.resize((256, 256))
+            img_array = np.array(img)  # Raw pixel values (0-255)
+            img_array = np.expand_dims(img_array, axis=0)
+            return img_array
+        except Exception as e:
+            logger.error(f"Error processing image bytes: {e}")
+            raise
+    
     def analyze(self, image_path: str) -> dict:
         if not self.model:
             logger.warning("Model not available, cannot analyze image")
@@ -134,6 +160,60 @@ class ArtAuthenticityDetector:
         
         except Exception as e:
             logger.error(f"Error analyzing image: {e}")
+            return {
+                "classification": "unknown",
+                "ai_confidence": None,
+                "human_confidence": None,
+                "recommendation": "approve",
+                "error": str(e)
+            }
+    
+    def analyze_bytes(self, file_bytes: bytes) -> dict:
+        """Analyze image from bytes instead of file path (works for both local and production)"""
+        if not self.model:
+            logger.warning("Model not available, cannot analyze image")
+            return {
+                "classification": "unknown",
+                "ai_confidence": None,
+                "human_confidence": None,
+                "recommendation": "approve",
+                "error": "Model not loaded"
+            }
+        
+        try:
+            # Preprocess bytes
+            img_array = self.process_image_bytes(file_bytes)
+            
+            # Predict (model outputs probability of being human-made)
+            prediction = self.model.predict(img_array, verbose=0)
+            ai_confidence = float(prediction[0][0])
+            human_confidence = 1.0 - ai_confidence
+            
+            # Classify based on confidence thresholds
+            if ai_confidence > 0.64:
+                classification = "ai"
+                recommendation = "block"
+            elif ai_confidence > 0.5:
+                classification = "ai"
+                recommendation = "flag"
+            else:
+                classification = "human"
+                recommendation = "approve"
+            
+            logger.info(
+                f"Art Analysis: {classification.upper()} "
+                f"(AI confidence: {ai_confidence:.1%})"
+            )
+            
+            return {
+                "classification": classification,
+                "ai_confidence": ai_confidence,
+                "human_confidence": human_confidence,
+                "recommendation": recommendation
+            }
+        
+        except Exception as e:
+            logger.error(f"Error analyzing image bytes: {e}")
             return {
                 "classification": "unknown",
                 "ai_confidence": None,
