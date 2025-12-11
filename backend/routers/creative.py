@@ -9,6 +9,7 @@ from auth import verify_access_token
 import os
 import secrets
 from pathlib import Path
+from storage_service import upload_image, delete_image
 import json
 from fastapi.security import HTTPBearer
 import logging
@@ -36,7 +37,7 @@ UPLOAD_DIR = Path("uploads/creative")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def save_image(file: UploadFile) -> str:
-    """Save uploaded image and return URL"""
+    """Save uploaded image to Supabase Storage and return URL"""
     # Validate file type
     allowed_extensions = ['jpg', 'jpeg', 'png', 'webp']
     file_extension = file.filename.split(".")[-1].lower()
@@ -44,15 +45,16 @@ def save_image(file: UploadFile) -> str:
     if file_extension not in allowed_extensions:
         raise HTTPException(status_code=400, detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}")
     
-    # Generate unique filename
-    unique_filename = f"{secrets.token_urlsafe(16)}.{file_extension}"
-    file_path = UPLOAD_DIR / unique_filename
+    # Read file data
+    file_data = file.file.read()
     
-    # Save file
-    with open(file_path, "wb") as buffer:
-        buffer.write(file.file.read())
+    # Upload to Supabase
+    public_url = upload_image(file_data, file.filename)
     
-    return f"/uploads/creative/{unique_filename}"
+    if not public_url:
+        raise HTTPException(status_code=500, detail="Failed to upload image")
+    
+    return public_url
 
 def get_current_user(credentials, db: Session):
     """Get current user from JWT token"""
@@ -470,22 +472,12 @@ def delete_creative_post(
     if post.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this post")
     
-    # Delete associated images from filesystem
+   # Delete associated images from Supabase
     if post.final_image_url:
-        try:
-            file_path = post.final_image_url.lstrip('/')
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception as e:
-            print(f"Error deleting final image: {e}")
+        delete_image(post.final_image_url)
     
     for photo in post.progress_photos:
-        try:
-            file_path = photo.image_url.lstrip('/')
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception as e:
-            print(f"Error deleting progress photo: {e}")
+        delete_image(photo.image_url)
     
     db.delete(post)
     db.commit()
