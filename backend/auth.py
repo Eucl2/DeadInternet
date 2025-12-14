@@ -8,6 +8,48 @@ from email_service import generate_verification_token, get_token_expiry, send_ve
 import re
 from config import config
 import jwt
+from pathlib import Path
+
+# Load disposable email domains at startup
+def load_disposable_domains():
+    """Load disposable email domain blocklist from local file"""
+    blocklist_path = Path(__file__).parent / "blocklist" / "disposable_email_blocklist.conf"
+    
+    if not blocklist_path.exists():
+        print(f"Warning: Blocklist not found at {blocklist_path}")
+        return set()
+    
+    domains = set()
+    with open(blocklist_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                domains.add(line.lower())
+    
+    print(f"Loaded {len(domains)} disposable email domains") #debug
+    return domains
+
+# Load once when module is imported
+DISPOSABLE_DOMAINS = load_disposable_domains()
+
+
+def is_disposable_email(email: str) -> bool:
+    """
+    Check if email uses a disposable domain
+    Returns True if disposable, False if legitimate
+    """
+    try:
+        domain_parts = email.lower().split("@")[1].split(".")
+        for i in range(len(domain_parts) - 1):
+            domain_to_check = ".".join(domain_parts[i:])
+            if domain_to_check in DISPOSABLE_DOMAINS:
+                return True
+    except (IndexError, AttributeError):
+        # Invalid email format, let other validation handle it
+        return False
+    
+    return False
+
 
 def validate_password_strength(password: str) -> None:
     """Validate password strength without exposing it in API responses"""
@@ -53,6 +95,13 @@ def create_user(db: Session, user: UserCreate, frontend_url: str = None) -> User
         frontend_url = config.FRONTEND_URL
 
     validate_password_strength(user.password)
+    
+    # Check for disposable email
+    if is_disposable_email(user.email):
+        raise HTTPException(
+            status_code=400, 
+            detail="Temporary email addresses are not allowed."
+        )
     
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user.email).first()
