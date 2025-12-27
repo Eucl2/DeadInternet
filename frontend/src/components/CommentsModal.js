@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { formatTimestamp } from '../utils/timeUtils';
 import { API_BASE, COMMENT_LIMITS } from '../config/constants';
+import { usePasteHandler } from '../hooks/usePasteHandler';
 
 const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const { pasteMessage, handlePaste } = usePasteHandler(COMMENT_LIMITS.PASTE_MESSAGE_DURATION || 4000);
 
   const baseUrl = isCreative ? `${API_BASE}/creative` : `${API_BASE}/posts`;
 
@@ -43,13 +46,23 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
     e.preventDefault();
     
     if (!newComment.trim()) return;
+
+    // Validate minimum characters
+    if (newComment.trim().length < COMMENT_LIMITS.MIN_CHARS) {
+      setError(`Comment must be at least ${COMMENT_LIMITS.MIN_CHARS} characters`);
+      setTimeout(() => setError(''), 5000);
+      return;
+    }
     
     if (newComment.length > COMMENT_LIMITS.MAX_LENGTH) {
-      alert(`Comment must be ${COMMENT_LIMITS.MAX_LENGTH} characters or less`);
+      setError(`Comment must be ${COMMENT_LIMITS.MAX_LENGTH} characters or less`);
+      setTimeout(() => setError(''), 5000);
       return;
     }
 
     setSubmitting(true);
+    setError('');
+
     try {
       const token = localStorage.getItem('session_id');
       const response = await axios.post(
@@ -64,7 +77,12 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
       setNewComment('');
     } catch (error) {
       console.error('Failed to post comment:', error);
-      alert('Failed to post comment');
+      if (error.response?.data?.detail) {
+        setError(error.response.data.detail);
+      } else {
+        setError('Failed to post comment');
+      }
+      setTimeout(() => setError(''), 5000);
     } finally {
       setSubmitting(false);
     }
@@ -94,16 +112,26 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
           <textarea
             value={newComment}
             onChange={handleCommentChange}
+            onPaste={handlePaste}
             placeholder="Write a comment..."
             className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none break-words whitespace-normal"
             rows="3"
             maxLength={COMMENT_LIMITS.MAX_LENGTH}
           />
+          {pasteMessage && (
+            <div className="text-orange-500 text-xs mt-2">{pasteMessage}</div>
+          )}
+          {error && (
+            <div className="text-red-500 text-xs mt-2">{error}</div>
+          )}
           <div className="flex justify-between items-center mt-3">
-            <span className="text-xs text-gray-500">{newComment.length}/{COMMENT_LIMITS.MAX_LENGTH}</span>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-gray-500">{newComment.length}/{COMMENT_LIMITS.MAX_LENGTH}</span>
+              <span className="text-xs text-gray-500">Minimum {COMMENT_LIMITS.MIN_CHARS} characters required</span>
+            </div>
             <button
               type="submit"
-              disabled={submitting || !newComment.trim()}
+              disabled={submitting || newComment.trim().length < COMMENT_LIMITS.MIN_CHARS || newComment.length > COMMENT_LIMITS.MAX_LENGTH}
               className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-black font-medium rounded transition-colors disabled:opacity-50"
             >
               {submitting ? 'Posting...' : 'Post'}

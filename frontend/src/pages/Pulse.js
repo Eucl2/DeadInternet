@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE, POST_LIMITS } from '../config/constants';
 import { formatTimestamp } from '../utils/timeUtils';
+import { usePasteHandler } from '../hooks/usePasteHandler';
 import TagDropdown from '../components/TagDropdown';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CommentsModal from '../components/CommentsModal';
@@ -10,8 +11,9 @@ const Pulse = ({ user }) => {
   const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
-  const [pasteMessage, setPasteMessage] = useState('');
+  const [error, setError] = useState('');
   const [selectedTag, setSelectedTag] = useState('Thoughts');
+  const { pasteMessage, handlePaste } = usePasteHandler(POST_LIMITS.PASTE_MESSAGE_DURATION);
 
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -29,7 +31,7 @@ const Pulse = ({ user }) => {
     lastEventTime: null,
     backspaceCount: 0,
     pauseCount: 0,
-    intervals: []  // Raw time gaps between keystrokes
+    intervals: []
   });
   const typingDataRef = useRef(typingData);
 
@@ -121,12 +123,6 @@ const Pulse = ({ user }) => {
     }));
   };
 
-  const handlePaste = (e) => {
-    e.preventDefault();
-    setPasteMessage('Please type your thoughts fresh!');
-    setTimeout(() => setPasteMessage(''), POST_LIMITS.PASTE_MESSAGE_DURATION);
-  };
-
   const handleInputChange = (e) => {
     setNewPost(e.target.value);
   };
@@ -187,8 +183,8 @@ const Pulse = ({ user }) => {
     } catch (error) {
       console.error('Failed to create post:', error);
       if (error.response?.data?.detail) {
-        setPasteMessage(error.response.data.detail);
-        setTimeout(() => setPasteMessage(''), 5000);
+        setError(error.response.data.detail);
+        setTimeout(() => setError(''), 5000);
       }
     } finally {
       setLoading(false);
@@ -283,17 +279,25 @@ const Pulse = ({ user }) => {
             rows="4"
             maxLength={POST_LIMITS.MAX_LENGTH}
           />
-          {pasteMessage && (
-            <div className="text-orange-500 text-sm mt-2 flex items-center">
-              {pasteMessage}
-            </div>
-          )}
+        {pasteMessage && (
+          <div className="text-orange-500 text-sm mt-2 flex items-center">
+            {pasteMessage}
+          </div>
+        )}
+        {error && (
+          <div className="text-red-500 text-sm mt-2 flex items-center">
+            {error}
+          </div>
+        )}
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">{newPost.length}/{POST_LIMITS.MAX_LENGTH} characters</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-gray-500">{newPost.length}/{POST_LIMITS.MAX_LENGTH} characters</span>
+            <span className="text-xs text-gray-500">Minimum {POST_LIMITS.MIN_CHARS} characters required</span>
+          </div>
           <button
             type="submit"
-            disabled={loading || !newPost.trim()}
+            disabled={loading || newPost.trim().length < POST_LIMITS.MIN_CHARS || newPost.length > POST_LIMITS.MAX_LENGTH}
             className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-black font-medium rounded hover:from-orange-400 hover:to-orange-500 transition-all disabled:opacity-50"
           >
             {loading ? 'Posting...' : 'Post'}

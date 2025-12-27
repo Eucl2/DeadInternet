@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-import { API_BASE } from '../config/constants';
+import { API_BASE, BIO_LIMITS } from '../config/constants';
+import { usePasteHandler } from '../hooks/usePasteHandler';
 
 const Profile = ({ user, onUserUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -12,7 +13,6 @@ const Profile = ({ user, onUserUpdate }) => {
 
   const [newBio, setNewBio] = useState(user?.bio || '');
   const [isEditingBio, setIsEditingBio] = useState(false);
-  const [bioError, setBioError] = useState('');
   const [bioSuccess, setBioSuccess] = useState('');
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -25,6 +25,8 @@ const Profile = ({ user, onUserUpdate }) => {
 
   const [nameError, setNameError] = useState('');
   const [nameSuccess, setNameSuccess] = useState('');
+
+  const { pasteMessage: bioError, handlePaste: handleBioPaste } = usePasteHandler(BIO_LIMITS.PASTE_MESSAGE_DURATION || 4000);
 
   const handleUsernameUpdate = async (e) => {
     e.preventDefault();
@@ -85,13 +87,17 @@ const Profile = ({ user, onUserUpdate }) => {
   const handleBioUpdate = async (e) => {
     e.preventDefault();
     
-    if (newBio.trim().length > 100) {
-      setBioError('Bio must be 100 characters or less');
+    // Validate minimum characters
+    if (newBio.trim().length < BIO_LIMITS.MIN_CHARS) {
+      return;
+    }
+
+    // Validate maximum characters
+    if (newBio.trim().length > BIO_LIMITS.MAX_LENGTH) {
       return;
     }
 
     setLoading(true);
-    setBioError('');
     setBioSuccess('');
 
     try {
@@ -106,7 +112,7 @@ const Profile = ({ user, onUserUpdate }) => {
       setBioSuccess('Bio updated successfully!');
       setIsEditingBio(false);
     } catch (err) {
-      setBioError(err.response?.data?.detail || 'Failed to update bio');
+      console.error('Failed to update bio:', err);
     } finally {
       setLoading(false);
     }
@@ -267,25 +273,33 @@ const Profile = ({ user, onUserUpdate }) => {
 
             {/* Bio */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Bio (max 100 characters)</label>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Bio
+              </label>
               {isEditingBio ? (
                 <form onSubmit={handleBioUpdate} className="space-y-3">
                   <textarea
                     value={newBio}
                     onChange={(e) => setNewBio(e.target.value)}
+                    onPaste={handleBioPaste}
                     className="w-full p-3 bg-gray-800 border border-gray-700 rounded focus:border-orange-500 focus:outline-none resize-none"
                     rows="2"
-                    maxLength={100}
+                    maxLength={BIO_LIMITS.MAX_LENGTH}
                     placeholder="A short bio about yourself..."
                   />
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs ${newBio.length > 100 ? 'text-red-400' : 'text-gray-500'}`}>
-                      {newBio.length}/100 characters
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-xs ${newBio.length > BIO_LIMITS.MAX_LENGTH ? 'text-red-400' : 'text-gray-500'}`}>
+                        {newBio.length}/{BIO_LIMITS.MAX_LENGTH} characters
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Minimum {BIO_LIMITS.MIN_CHARS} characters required
+                      </span>
+                    </div>
                     <div className="flex space-x-3">
                       <button
                         type="submit"
-                        disabled={loading || newBio.length > 100}
+                        disabled={loading || newBio.trim().length < BIO_LIMITS.MIN_CHARS || newBio.length > BIO_LIMITS.MAX_LENGTH}
                         className="px-4 py-2 bg-orange-500 text-black rounded hover:bg-orange-400 transition-colors disabled:opacity-50"
                       >
                         {loading ? 'Saving...' : 'Save'}
@@ -295,7 +309,6 @@ const Profile = ({ user, onUserUpdate }) => {
                         onClick={() => {
                           setIsEditingBio(false);
                           setNewBio(user.bio || '');
-                          setBioError('');
                         }}
                         className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors"
                       >
@@ -316,7 +329,7 @@ const Profile = ({ user, onUserUpdate }) => {
                 </div>
               )}
               
-              {bioError && <div className="mt-2 text-red-400 text-sm">{bioError}</div>}
+              {bioError && <div className="mt-2 text-orange-500 text-sm">{bioError}</div>}
               {bioSuccess && <div className="mt-2 text-green-400 text-sm">{bioSuccess}</div>}
             </div>
 

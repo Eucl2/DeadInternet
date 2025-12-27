@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE, SPARK_LIMITS } from '../config/constants';
 import { formatTimestamp } from '../utils/timeUtils';
+import { usePasteHandler } from '../hooks/usePasteHandler';
 
 const Sparks = ({ user }) => {
   const [spark, setSpark] = useState(null);
@@ -9,8 +10,9 @@ const Sparks = ({ user }) => {
   const [newResponse, setNewResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [pasteMessage, setPasteMessage] = useState('');
+  const [error, setError] = useState('');
   const [alreadyResponded, setAlreadyResponded] = useState(false);
+  const { pasteMessage, handlePaste } = usePasteHandler(SPARK_LIMITS.PASTE_MESSAGE_DURATION || 4000);
 
   useEffect(() => {
     loadDailySpark();
@@ -33,17 +35,13 @@ const Sparks = ({ user }) => {
     }
   };
 
-  const handlePaste = (e) => {
-    e.preventDefault();
-    setPasteMessage('Please type your thoughts fresh!');
-    setTimeout(() => setPasteMessage(''), 4000);
-  };
-
   const handleSubmitResponse = async (e) => {
     e.preventDefault();
     if (!newResponse.trim()) return;
 
     setSubmitting(true);
+    setError('');
+    
     try {
       const token = localStorage.getItem('session_id');
       const sparkResponse = await axios.post(
@@ -63,8 +61,8 @@ const Sparks = ({ user }) => {
     } catch (error) {
       console.error('Failed to submit response:', error);
       if (error.response?.data?.detail) {
-        setPasteMessage(error.response.data.detail);
-        setTimeout(() => setPasteMessage(''), 5000);
+        setError(error.response.data.detail);
+        setTimeout(() => setError(''), 5000);
       }
     } finally {
       setSubmitting(false);
@@ -105,11 +103,17 @@ const Sparks = ({ user }) => {
             {pasteMessage && (
               <div className="text-orange-500 text-sm mt-2">{pasteMessage}</div>
             )}
+            {error && (
+              <div className="text-red-500 text-sm mt-2">{error}</div>
+            )}
             <div className="flex justify-between items-center mt-4">
-              <span className="text-sm text-gray-500">{newResponse.length}/{SPARK_LIMITS.MAX_LENGTH} characters</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm text-gray-500">{newResponse.length}/{SPARK_LIMITS.MAX_LENGTH} characters</span>
+                <span className="text-xs text-gray-500">Minimum {SPARK_LIMITS.MIN_CHARS} characters required</span>
+              </div>
               <button
                 type="submit"
-                disabled={submitting || !newResponse.trim()}
+                disabled={submitting || newResponse.trim().length < SPARK_LIMITS.MIN_CHARS || newResponse.length > SPARK_LIMITS.MAX_LENGTH}
                 className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-black font-medium rounded hover:from-orange-400 hover:to-orange-500 transition-all disabled:opacity-50"
               >
                 {submitting ? 'Sharing...' : 'Share Answer'}
@@ -122,10 +126,6 @@ const Sparks = ({ user }) => {
           </div>
         )}
       </div>
-
-
-
-
 
       {/* Stats Section */}
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 border-l-4 border-orange-500 rounded-lg p-8 mb-8">
@@ -156,10 +156,6 @@ const Sparks = ({ user }) => {
           </div>
         </div>
       </div>
-
-
-
-      
 
       {/* Responses */}
       <div>

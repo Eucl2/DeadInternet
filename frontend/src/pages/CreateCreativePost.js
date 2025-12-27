@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { API_BASE } from '../config/constants';
+import { API_BASE, CREATIVE_POST_LIMITS } from '../config/constants';
 import { useNavigate } from 'react-router-dom';
+import { usePasteHandler } from '../hooks/usePasteHandler';
 
 const CATEGORIES = ['Writing', 'Drawing', 'Photography'];
 
@@ -18,13 +19,16 @@ const CreateCreativePost = ({ user }) => {
   const [progressCaptions, setProgressCaptions] = useState(['', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [pasteMessage, setPasteMessage] = useState('');
   
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const progressInput0 = useRef(null);
   const progressInput1 = useRef(null);
   const progressInput2 = useRef(null);
+
+  // Paste handlers for title and description
+  const { pasteMessage: titlePasteMessage, handlePaste: handleTitlePaste } = usePasteHandler(4000);
+  const { pasteMessage: descriptionPasteMessage, handlePaste: handleDescriptionPaste } = usePasteHandler(4000);
 
   // Typing tracking for Writing category
   const [typingData, setTypingData] = useState({
@@ -111,14 +115,15 @@ const CreateCreativePost = ({ user }) => {
 
   const handlePaste = (e) => {
     setPasteDetected(true);
-    console.log('Paste detected - typing analysis will be skipped');
+    console.log('Paste detected, typing analysis will be skipped');
   };
+
   const handleInputChange = (e) => {
     setContent(e.target.value);
     // 'insertText' means manual typing, 'insertFromPaste' is paste
     if (pasteDetected && e.nativeEvent.inputType === 'insertText') {
       setPasteDetected(false);
-      console.log('User resumed typing - paste flag cleared');
+      console.log('User resumed typing, paste flag cleared');
     }
   };
 
@@ -195,13 +200,27 @@ const CreateCreativePost = ({ user }) => {
       if (category === 'Writing') return content.trim().length > 0;
       return finalImage !== null;
     }
-    if (step === 4) return title.trim().length > 0;
+    if (step === 4) return title.trim().length >= CREATIVE_POST_LIMITS.TITLE_MIN_CHARS;
     return false;
   };
 
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
+
+    // Validate title
+    if (title.trim().length < CREATIVE_POST_LIMITS.TITLE_MIN_CHARS) {
+      setError(`Title must be at least ${CREATIVE_POST_LIMITS.TITLE_MIN_CHARS} characters`);
+      setLoading(false);
+      return;
+    }
+
+    // Validate description if provided
+    if (description.trim().length > 0 && description.trim().length < CREATIVE_POST_LIMITS.DESCRIPTION_MIN_CHARS) {
+      setError(`Description must be at least ${CREATIVE_POST_LIMITS.DESCRIPTION_MIN_CHARS} characters`);
+      setLoading(false);
+      return;
+    }
 
     try {
       const token = localStorage.getItem('session_id');
@@ -387,9 +406,6 @@ const CreateCreativePost = ({ user }) => {
                   className="w-full bg-gray-800 border border-gray-700 rounded p-4 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
                   rows="12"
                 />
-                {pasteMessage && (
-                  <div className="text-orange-500 text-sm mt-2">{pasteMessage}</div>
-                )}
               </div>
             ) : (
               <div>
@@ -429,38 +445,52 @@ const CreateCreativePost = ({ user }) => {
             <h2 className="text-2xl font-light text-orange-500 mb-6">Add Details</h2>
             
             <div className="space-y-4">
+              {/* Title */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm text-gray-400">Title *</label>
-                  <span className={`text-xs ${title.length > 100 ? 'text-red-500' : 'text-gray-500'}`}>
-                    {title.length}/100
+                  <label className="block text-sm text-gray-400">
+                    Title (min {CREATIVE_POST_LIMITS.TITLE_MIN_CHARS} - max {CREATIVE_POST_LIMITS.TITLE_MAX_LENGTH} characters) *
+                  </label>
+                  <span className={`text-xs ${title.length > CREATIVE_POST_LIMITS.TITLE_MAX_LENGTH ? 'text-red-500' : 'text-gray-500'}`}>
+                    {title.length}/{CREATIVE_POST_LIMITS.TITLE_MAX_LENGTH}
                   </span>
                 </div>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  onPaste={handleTitlePaste}
                   placeholder="Give your work a title"
                   className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none"
-                  maxLength={100}
+                  maxLength={CREATIVE_POST_LIMITS.TITLE_MAX_LENGTH}
                 />
+                {titlePasteMessage && (
+                  <div className="text-orange-500 text-xs mt-2">{titlePasteMessage}</div>
+                )}
               </div>
               
+              {/* Description */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm text-gray-400">Description (optional)</label>
-                  <span className={`text-xs ${description.length > 280 ? 'text-red-500' : 'text-gray-500'}`}>
-                    {description.length}/280
+                  <label className="block text-sm text-gray-400">
+                    Description (min {CREATIVE_POST_LIMITS.DESCRIPTION_MIN_CHARS} - max {CREATIVE_POST_LIMITS.DESCRIPTION_MAX_LENGTH} characters, optional)
+                  </label>
+                  <span className={`text-xs ${description.length > CREATIVE_POST_LIMITS.DESCRIPTION_MAX_LENGTH ? 'text-red-500' : 'text-gray-500'}`}>
+                    {description.length}/{CREATIVE_POST_LIMITS.DESCRIPTION_MAX_LENGTH}
                   </span>
                 </div>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  onPaste={handleDescriptionPaste}
                   placeholder="Tell us about your creative process..."
                   className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none"
                   rows="4"
-                  maxLength={280}
+                  maxLength={CREATIVE_POST_LIMITS.DESCRIPTION_MAX_LENGTH}
                 />
+                {descriptionPasteMessage && (
+                  <div className="text-orange-500 text-xs mt-2">{descriptionPasteMessage}</div>
+                )}
               </div>
             </div>
           </div>
