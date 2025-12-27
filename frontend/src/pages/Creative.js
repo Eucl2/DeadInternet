@@ -56,6 +56,8 @@ const Creative = ({ user }) => {
       ));
     } catch (error) {
       console.error('Like error:', error);
+      console.error('Response data:', error.response?.data);
+      console.error('Status:', error.response?.status); 
     }
   };
 
