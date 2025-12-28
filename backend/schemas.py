@@ -133,8 +133,6 @@ class CommentResponse(BaseModel):
         from_attributes = True
 
 
-
-# Sparks Schemas
 # Sparks Schemas
 class SparkResponseCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=280)
