@@ -194,7 +194,7 @@ async def create_creative_post(
             )
             
             # DEBUG
-            print(f"\n🔍 CREATIVE BERT ANALYSIS:")
+            print(f"\nCREATIVE BERT ANALYSIS:")
             print(f"  Content: {content[:50]}...")
             print(f"  Paste Detected: {paste_detected_bool}")
             print(f"  Hybrid Score: {ml_analysis['hybrid_score']}")

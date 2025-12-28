@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from database import create_tables, get_db
 from config import config
@@ -15,12 +16,26 @@ from email_service import send_verification_email
 from auth import create_user, get_user_by_username, verify_password, create_access_token, verify_access_token, verify_email, get_current_user
 from bert_inference import BERTInference, HybridContentScorer
 from art_detection import ArtAuthenticityDetector
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="DeadInternet API", version="0.5.0")
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_exceeded_handler(request, exc):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Try again later."}
+    )
 
 # Security scheme for JWT
 security = HTTPBearer()
@@ -107,7 +122,8 @@ def health_check():
     return {"status": "healthy", "version": "0.5.0"}
 
 @app.post("/auth/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/hour")
+def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     # Check if user exists
     if get_user_by_username(db, user.username):
         raise HTTPException(
@@ -125,7 +141,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     }
 
 @app.post("/auth/login", response_model=AuthResponse)
-def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, credentials: LoginRequest, db: Session = Depends(get_db)):
     # Get user
     user = get_user_by_username(db, credentials.username)
     
@@ -216,7 +233,9 @@ def logout():
     return {"message": "Logged out successfully"}
 
 @app.post("/posts", response_model=PostResponse)
+@limiter.limit("30/hour")
 def create_post(
+    request: Request,
     post: PostCreate,
     credentials = Depends(security),
     db: Session = Depends(get_db)
@@ -234,7 +253,7 @@ def create_post(
             space=post.space
         )
         
-        # Log analysis for debugging
+        # Debugging
         print(f"Typing Analysis: {get_analysis_summary(analysis_result)}")
         
         # BLOCK if analysis says to block
@@ -272,7 +291,7 @@ def create_post(
             )
             
             # DEBUG
-            print(f"\n🔍 BERT ANALYSIS:")
+            print(f"\nBERT ANALYSIS:")
             print(f"  Content: {post.content[:50]}...")
             print(f"  Full Analysis: {ml_analysis}")
             print(f"  Recommendation: {ml_analysis['recommendation']}")
@@ -360,7 +379,8 @@ def get_posts(credentials = Depends(security), db: Session = Depends(get_db)):
 #    return user
 
 @app.post("/posts/{post_id}/like")
-def like_post(post_id: int, credentials = Depends(security), db: Session = Depends(get_db)):
+@limiter.limit("100/minute")
+def like_post(request: Request, post_id: int, credentials = Depends(security), db: Session = Depends(get_db)):
     """Like a post"""
     user = get_current_user(credentials, db)
     
@@ -423,7 +443,9 @@ def delete_post(post_id: int, credentials = Depends(security), db: Session = Dep
     return {"message": "Post deleted successfully"}
 
 @app.post("/posts/{post_id}/comments", response_model=CommentResponse)
+@limiter.limit("30/minute")
 def create_comment(
+    request: Request,
     post_id: int,
     comment: CommentCreate,
     credentials = Depends(security),
