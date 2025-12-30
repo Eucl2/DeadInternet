@@ -16,9 +16,8 @@ from email_service import send_verification_email
 from auth import create_user, get_user_by_username, verify_password, create_access_token, verify_access_token, verify_email, get_current_user
 from bert_inference import BERTInference, HybridContentScorer
 from art_detection import ArtAuthenticityDetector
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from limiter import limiter
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -27,7 +26,6 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="DeadInternet API", version="0.5.0")
 
 # Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)

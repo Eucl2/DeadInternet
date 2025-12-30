@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
 import models
@@ -12,6 +12,7 @@ from pathlib import Path
 from storage_service import upload_image, delete_image
 import json
 from fastapi.security import HTTPBearer
+from limiter import limiter
 import logging
 
 router = APIRouter(prefix="/creative", tags=["creative"])
@@ -65,7 +66,9 @@ def get_current_user(credentials, db: Session):
     return user
 
 @router.post("", response_model=CreativePostResponse)
+@limiter.limit("10/hour")
 async def create_creative_post(
+    request: Request,
     title: str = Form(...),
     description: Optional[str] = Form(None),
     category: str = Form(...),
@@ -406,7 +409,9 @@ def get_creative_post(
     )
 
 @router.post("/{post_id}/like")
+@limiter.limit("100/minute")
 def like_creative_post(
+    request: Request,
     post_id: int,
     credentials = Depends(security),
     db: Session = Depends(get_db)
@@ -488,7 +493,9 @@ def delete_creative_post(
 
 
 @router.post("/{post_id}/comments")
+@limiter.limit("30/minute")
 def create_creative_comment(
+    request: Request,
     post_id: int,
     comment: CommentCreate,
     credentials = Depends(security),
