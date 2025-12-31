@@ -24,8 +24,8 @@ export const COMMENT_LIMITS = {
 };
 
 export const SPARK_LIMITS = {
-  MIN_CHARS: 10,
-  MAX_LENGTH: 280,
+  MIN_CHARS: 5,
+  MAX_LENGTH: 50,
   PASTE_MESSAGE_DURATION: 4000
 };
 
