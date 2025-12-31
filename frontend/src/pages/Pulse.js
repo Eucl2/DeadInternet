@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE, POST_LIMITS } from '../config/constants';
 import { formatTimestamp } from '../utils/timeUtils';
 import { usePasteHandler } from '../hooks/usePasteHandler';
+import { useTypingCapture } from '../hooks/useTypingCapture';
 import TagDropdown from '../components/TagDropdown';
 import ConfirmationModal from '../components/ConfirmationModal';
 import CommentsModal from '../components/CommentsModal';
@@ -13,7 +14,9 @@ const Pulse = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedTag, setSelectedTag] = useState('Thoughts');
+  
   const { pasteMessage, handlePaste } = usePasteHandler(POST_LIMITS.PASTE_MESSAGE_DURATION);
+  const { handleFocus, handleKeyDown, getTypingDataForSubmission, resetTypingData } = useTypingCapture();
 
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -24,20 +27,6 @@ const Pulse = ({ user }) => {
     isOpen: false,
     postId: null
   });
-
-  const [typingData, setTypingData] = useState({
-    startTime: null,
-    firstCharTime: null,
-    lastEventTime: null,
-    backspaceCount: 0,
-    pauseCount: 0,
-    intervals: []
-  });
-  const typingDataRef = useRef(typingData);
-
-  useEffect(() => {
-    typingDataRef.current = typingData;
-  }, [typingData]);
 
   useEffect(() => {
     loadPosts();
@@ -55,99 +44,8 @@ const Pulse = ({ user }) => {
     }
   };
 
-  const resetTypingData = () => {
-    setTypingData({
-      startTime: null,
-      firstCharTime: null,
-      lastEventTime: null,
-      backspaceCount: 0,
-      pauseCount: 0,
-      intervals: []
-    });
-  };
-
-  const handleFocus = () => {
-    const now = Date.now();
-    setTypingData(prev => ({
-      ...prev,
-      startTime: prev.startTime || now
-    }));
-  };
-
-  const handleKeyDown = (e) => {
-    const now = Date.now();
-    const currentData = typingDataRef.current;
-
-    if (!currentData.startTime) {
-      setTypingData(prev => ({
-        ...prev,
-        startTime: now,
-        firstCharTime: now
-      }));
-      return;
-    }
-
-    if (!currentData.firstCharTime && e.key.length === 1) {
-      setTypingData(prev => ({
-        ...prev,
-        firstCharTime: now
-      }));
-    }
-    // Track pauses
-    if (currentData.lastEventTime) {
-      const interval = now - currentData.lastEventTime;
-      
-      if (interval > 500) {
-        setTypingData(prev => ({
-          ...prev,
-          pauseCount: prev.pauseCount + 1
-        }));
-      }
-
-      setTypingData(prev => ({
-        ...prev,
-        intervals: [...prev.intervals, interval]
-      }));
-    }
-
-    if (e.key === 'Backspace') {
-      setTypingData(prev => ({
-        ...prev,
-        backspaceCount: prev.backspaceCount + 1
-      }));
-    }
-
-    setTypingData(prev => ({
-      ...prev,
-      lastEventTime: now
-    }));
-  };
-
   const handleInputChange = (e) => {
     setNewPost(e.target.value);
-  };
-
-  const getTypingDataForSubmission = () => {
-    const data = typingDataRef.current;
-    const now = Date.now();
-
-    if (!data.startTime || !data.firstCharTime) {
-      return {
-        totalTime: 0,
-        thinkingTime: 0,
-        backspaceCount: 0,
-        pauseCount: 0,
-        intervals: []
-      };
-    }
-
-    return {
-      totalTime: now - data.startTime,
-      thinkingTime: data.firstCharTime - data.startTime,
-      backspaceCount: data.backspaceCount,
-      pauseCount: data.pauseCount,
-      intervals: data.intervals  // Backend calculates speedVariance and averageSpeed
-    };
   };
 
   const handlePostSubmit = async (e) => {

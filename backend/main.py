@@ -10,7 +10,7 @@ from schemas import UserCreate, UserResponse, AuthResponse, LoginRequest, PostCr
 import models
 from datetime import datetime, timedelta
 from typing import Optional
-from analysis import analyze_typing_pattern, get_analysis_summary
+from analysis import calculate_typing_score
 from routers import creative, sparks
 from email_service import send_verification_email
 from auth import create_user, get_user_by_username, verify_password, create_access_token, verify_access_token, verify_email, get_current_user
@@ -19,11 +19,12 @@ from art_detection import ArtAuthenticityDetector
 from slowapi.errors import RateLimitExceeded
 from limiter import limiter
 import logging
+import json
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="DeadInternet API", version="0.5.0")
+app = FastAPI(title="DeadInternet API", version="0.8.0")
 
 # Rate limiter
 app.state.limiter = limiter
@@ -46,7 +47,7 @@ art_detector = None
 # Creative router
 app.include_router(creative.router)
 
-# Sparkss router  
+# Sparks router  
 app.include_router(sparks.router)
 
 # CORS
@@ -117,7 +118,7 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "version": "0.5.0"}
+    return {"status": "healthy", "version": "0.8.0"}
 
 @app.post("/auth/register")
 @limiter.limit("5/hour")
@@ -231,35 +232,27 @@ def logout():
     return {"message": "Logged out successfully"}
 
 @app.post("/posts", response_model=PostResponse)
-@limiter.limit("30/hour")
+@limiter.limit("10/hour")
 def create_post(
     request: Request,
     post: PostCreate,
     credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
-    """Create a new post"""
+    """Create a new post with typing pattern and BERT analysis"""
     user = get_current_user(credentials, db)
     
-    # Analyze typing pattern if data provided
-    analysis_result = None
+    typing_score = None
+    typing_data_dict = None
+    
+    # Calculate typing score if data provided
     if post.typing_data:
         typing_data_dict = post.typing_data.model_dump()
-        analysis_result = analyze_typing_pattern(
+        typing_score = calculate_typing_score(
             typing_data=typing_data_dict,
-            content_length=len(post.content),
-            space=post.space
+            content_length=len(post.content)
         )
-        
-        # Debugging
-        print(f"Typing Analysis: {get_analysis_summary(analysis_result)}")
-        
-        # BLOCK if analysis says to block
-        if analysis_result.decision == "block":
-            raise HTTPException(
-                status_code=400,
-                detail=analysis_result.reason
-            )
+        print(f"Typing Score: {typing_score:.2f}/100")
     
     # Create post
     db_post = models.Post(
@@ -269,32 +262,27 @@ def create_post(
         space=post.space
     )
     
-    # Store analysis results if available
-    if analysis_result:
+    # Store typing score if available
+    if typing_score is not None:
         db_post.typing_metrics = typing_data_dict
-        db_post.human_score = analysis_result.human_score
-        db_post.analysis_decision = analysis_result.decision
-        db_post.analysis_flags = analysis_result.flags
-        
-        # Mark for review if flagged
-        if analysis_result.decision == "flag":
-            db_post.requires_review = True
+        db_post.human_score = typing_score
     
-    # Analyze with BERT
+    # Analyze with BERT (includes typing score in hybrid calculation)
     if hybrid_scorer:
         try:
             ml_analysis = hybrid_scorer.score_content(
                 text=post.content,
-                typing_metadata=typing_data_dict if post.typing_data else None
+                typing_score=typing_score
             )
             
             # DEBUG
             print(f"\nBERT ANALYSIS:")
             print(f"  Content: {post.content[:50]}...")
-            print(f"  Full Analysis: {ml_analysis}")
+            print(f"  Typing Score: {typing_score}")
+            print(f"  BERT Score: {ml_analysis['bert_score']:.2f}")
+            print(f"  Hybrid Score: {ml_analysis['hybrid_score']:.2f}")
+            print(f"  Classification: {ml_analysis['classification']}")
             print(f"  Recommendation: {ml_analysis['recommendation']}")
-            print(f"  Hybrid Score: {ml_analysis['hybrid_score']}")
-            
             
             # Store ML scores
             db_post.authenticity_score = ml_analysis['hybrid_score']
@@ -302,17 +290,13 @@ def create_post(
             db_post.recommendation = ml_analysis['recommendation']
             db_post.bert_confidence = ml_analysis['bert_details']['human_probability']
             
-            # block if AI-generated
+            # Block
             if ml_analysis['recommendation'] == 'block':
                 db.rollback()
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Post appears AI-generated (score: {ml_analysis['hybrid_score']:.1f}/100). Please rewrite with original content."
+                    detail=f"Content doesn't look genuine (score: {ml_analysis['hybrid_score']:.1f}/100). Please rewrite with authentic content."
                 )
-            
-            # Mark for review if ambiguous
-            if ml_analysis['recommendation'] == 'flag':
-                db_post.requires_review = True
             
             logger.info(f"Post ML Analysis - Classification: {ml_analysis['classification']}, Score: {ml_analysis['hybrid_score']:.1f}/100")
         
@@ -337,7 +321,7 @@ def create_post(
         like_count=db_post.like_count,
         user_has_liked=False,
         human_score=db_post.human_score,
-        analysis_decision=db_post.analysis_decision
+        analysis_decision=db_post.recommendation
     )
 
 @app.get("/posts", response_model=list[PostResponse])
@@ -364,17 +348,6 @@ def get_posts(credentials = Depends(security), db: Session = Depends(get_db)):
             comment_count=post.comment_count
         ) for post in posts
     ]
-
-#def get_current_user(credentials, db: Session = Depends(get_db)):
-#    """Get current user from JWT token"""
-#    user_id = verify_access_token(credentials.credentials)
-#    user = db.query(models.User).filter(models.User.id == user_id).first()
-#    if not user:
-#        raise HTTPException(
-#            status_code=status.HTTP_404_NOT_FOUND,
-#            detail="User not found"
-#        )
-#    return user
 
 @app.post("/posts/{post_id}/like")
 @limiter.limit("100/minute")
@@ -449,18 +422,73 @@ def create_comment(
     credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
-    """Create a comment on a post"""
+    """Create a comment on a post with typing pattern and BERT analysis"""
     user = get_current_user(credentials, db)
     
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
 
+    typing_score = None
+    typing_data_dict = None
+    
+    # Calculate typing score if data provided
+    if comment.typing_data:
+        typing_data_dict = comment.typing_data.model_dump()
+        typing_score = calculate_typing_score(
+            typing_data=typing_data_dict,
+            content_length=len(comment.content)
+        )
+        print(f"Comment Typing Score: {typing_score:.2f}/100")
+
     db_comment = models.Comment(
         content=comment.content,
         post_id=post_id,
         author_id=user.id
     )
+    
+    # Store typing score if available
+    if typing_score is not None:
+        db_comment.typing_metrics = typing_data_dict
+        db_comment.human_score = typing_score
+    
+    # Analyze with BERT (includes typingg score in hybrid calculation)
+    if hybrid_scorer:
+        try:
+            ml_analysis = hybrid_scorer.score_content(
+                text=comment.content,
+                typing_score=typing_score
+            )
+            
+            print(f"\nCOMMENT BERT ANALYSIS:")
+            print(f"  Content: {comment.content[:50]}...")
+            print(f"  Typing Score: {typing_score}")
+            print(f"  Hybrid Score: {ml_analysis['hybrid_score']:.2f}")
+            print(f"  Recommendation: {ml_analysis['recommendation']}\n")
+            
+            # Store ML scores
+            db_comment.authenticity_score = ml_analysis['hybrid_score']
+            db_comment.classification = ml_analysis['classification']
+            db_comment.recommendation = ml_analysis['recommendation']
+            db_comment.bert_confidence = ml_analysis['bert_details']['human_probability']
+            
+            # Block if recommendation is block
+            if ml_analysis['recommendation'] == 'block':
+                db.rollback()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Comment doesn't look genuine (score: {ml_analysis['hybrid_score']:.1f}/100). Please write an authentic comment."
+                )
+            
+            logger.info(f"Comment ML Analysis - Classification: {ml_analysis['classification']}, Score: {ml_analysis['hybrid_score']:.1f}/100")
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"BERT analysis error on comment: {e}")
+            # Continue without ML if it fails
+    else:
+        logger.warning("BERT model not available, processing comment without ML analysis")
     
     db.add(db_comment)
     db.commit()
@@ -470,7 +498,10 @@ def create_comment(
         id=db_comment.id,
         content=db_comment.content,
         author=db_comment.author.username,
-        created_at=db_comment.created_at
+        created_at=db_comment.created_at,
+        human_score=db_comment.human_score,
+        authenticity_score=db_comment.authenticity_score,
+        classification=db_comment.classification
     )
 
 @app.get("/posts/{post_id}/comments")

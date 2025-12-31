@@ -4,7 +4,7 @@ from typing import Optional, List
 import models
 from database import get_db
 from schemas import CommentCreate, CreativePostResponse, ProgressPhotoResponse
-from analysis import analyze_typing_pattern, get_analysis_summary
+from analysis import calculate_typing_score
 from auth import verify_access_token
 import os
 import secrets
@@ -13,6 +13,7 @@ from storage_service import upload_image, delete_image
 import json
 from fastapi.security import HTTPBearer
 from limiter import limiter
+from analysis import calculate_typing_score
 import logging
 
 router = APIRouter(prefix="/creative", tags=["creative"])
@@ -74,14 +75,14 @@ async def create_creative_post(
     category: str = Form(...),
     content: Optional[str] = Form(None),  # For Writing
     typing_data: Optional[str] = Form(None),
-    paste_detected: Optional[str] = Form("false"),  # paste detection flag
-    final_image: Optional[UploadFile] = File(None),  # For Drawing/Photography
+    paste_detected: Optional[str] = Form("false"),
+    final_image: Optional[UploadFile] = File(None),
     progress_photos: List[UploadFile] = File(default=[]),
-    progress_captions: Optional[str] = Form(None),  # JSON array of captions
+    progress_captions: Optional[str] = Form(None),
     credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
-    """Create a new creative post with progress photos and BERT analysis for Writing"""
+    """Create a new creative post with progress photos and analysis"""
     user = get_current_user(credentials, db)
 
     # Validate title length
@@ -132,26 +133,18 @@ async def create_creative_post(
     paste_detected_bool = paste_detected.lower() == "true"
     
     # Analyze typing pattern for writing (ONLY if paste isn't detected)
-    analysis_result = None
+    typing_score = None
     typing_data_dict = None
     
     if category == 'Writing' and typing_data and not paste_detected_bool:
         try:
             typing_data_dict = json.loads(typing_data)
-            analysis_result = analyze_typing_pattern(
+            typing_score = calculate_typing_score(
                 typing_data=typing_data_dict,
-                content_length=len(content),
-                space="creative"
+                content_length=len(content)
             )
             
-            print(f"Creative Writing Analysis: {get_analysis_summary(analysis_result)}")
-            
-            # Block if typing analysis says to block
-            if analysis_result.decision == "block":
-                raise HTTPException(
-                    status_code=400,
-                    detail=analysis_result.reason
-                )
+            print(f"Creative Writing Typing Score: {typing_score:.2f}/100")
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid typing data format")
     elif paste_detected_bool and category == 'Writing':
@@ -178,29 +171,26 @@ async def create_creative_post(
         final_image_url=final_image_url
     )
     
-    # Store typing analysis if available
-    if analysis_result:
+    # Store typing score if available
+    if typing_score is not None:
         db_post.typing_metrics = typing_data_dict
-        db_post.human_score = analysis_result.human_score
-        db_post.analysis_decision = analysis_result.decision
-        db_post.analysis_flags = analysis_result.flags
-        
-        if analysis_result.decision == "flag":
-            db_post.requires_review = True
+        db_post.human_score = typing_score
     
     # BERT ANALYSIS FOR WRITING
     if category == 'Writing' and hybrid_scorer:
         try:
             ml_analysis = hybrid_scorer.score_content(
                 text=content,
-                typing_metadata=typing_data_dict if typing_data_dict else None
+                typing_score=typing_score
             )
             
             # DEBUG
             print(f"\nCREATIVE BERT ANALYSIS:")
             print(f"  Content: {content[:50]}...")
             print(f"  Paste Detected: {paste_detected_bool}")
-            print(f"  Hybrid Score: {ml_analysis['hybrid_score']}")
+            print(f"  Typing Score: {typing_score}")
+            print(f"  BERT Score: {ml_analysis['bert_score']:.2f}")
+            print(f"  Hybrid Score: {ml_analysis['hybrid_score']:.2f}")
             print(f"  Classification: {ml_analysis['classification']}")
             print(f"  Recommendation: {ml_analysis['recommendation']}\n")
             
@@ -210,16 +200,13 @@ async def create_creative_post(
             db_post.recommendation = ml_analysis['recommendation']
             db_post.bert_confidence = ml_analysis['bert_details']['human_probability']
             
-            # bllock if AI-generated
+            # Block if recommendation is block
             if ml_analysis['recommendation'] == 'block':
                 db.rollback()
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Content appears AI-generated (score: {ml_analysis['hybrid_score']:.1f}/100). Please rewrite with original content."
+                    detail=f"Content doesn't look genuine (score: {ml_analysis['hybrid_score']:.1f}/100). Please rewrite with authentic content."
                 )
-            
-            if ml_analysis['recommendation'] == 'flag':
-                db_post.requires_review = True
             
             logger.info(f"Creative Writing ML Analysis - Classification: {ml_analysis['classification']}, Score: {ml_analysis['hybrid_score']:.1f}/100")
         
@@ -236,7 +223,7 @@ async def create_creative_post(
         try:
             art_analysis = art_detector.analyze_bytes(final_image_data)
             
-            # DEBUGg
+            # DEBUG
             print(f"\nCREATIVE ART ANALYSIS:")
             print(f"  Category: {category}")
             print(f"  Classification: {art_analysis['classification']}")
@@ -248,16 +235,13 @@ async def create_creative_post(
             db_post.art_ai_confidence = art_analysis['ai_confidence']
             db_post.art_analysis = art_analysis
             
-            # Block if likely AI
+            # Block
             if art_analysis['recommendation'] == 'block':
                 db.rollback()
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Artwork appears AI-generated (confidence: {art_analysis['ai_confidence']:.1%}). Please upload original artwork."
+                    detail=f"Artwork doesn't look genuine (confidence: {art_analysis['ai_confidence']:.1%}). Please upload authentic artwork."
                 )
-            
-            if art_analysis['recommendation'] == 'flag':
-                db_post.art_requires_review = True
             
             logger.info(f"Creative Art Analysis - Classification: {art_analysis['classification']}")
         
@@ -321,7 +305,7 @@ async def create_creative_post(
             ) for p in db_post.progress_photos
         ],
         human_score=db_post.human_score,
-        analysis_decision=db_post.analysis_decision,
+        analysis_decision=db_post.recommendation,
         art_ai_confidence=db_post.art_ai_confidence
     )
 
@@ -365,7 +349,7 @@ def get_creative_posts(
                 ) for p in post.progress_photos
             ],
             human_score=post.human_score,
-            analysis_decision=post.analysis_decision,
+            analysis_decision=post.recommendation,
             art_ai_confidence=post.art_ai_confidence
         ) for post in posts
     ]
@@ -404,7 +388,7 @@ def get_creative_post(
             ) for p in post.progress_photos
         ],
         human_score=post.human_score,
-        analysis_decision=post.analysis_decision,
+        analysis_decision=post.recommendation,
         art_ai_confidence=post.art_ai_confidence
     )
 
@@ -501,7 +485,7 @@ def create_creative_comment(
     credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
-    """Create a comment on a creative post"""
+    """Create a comment on a creative post with typing pattern and BERT analysis"""
     user = get_current_user(credentials, db)
     
     post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
@@ -514,11 +498,67 @@ def create_creative_comment(
             detail="Comment must be 200 characters or less"
         )
     
+    typing_score = None
+    typing_data_dict = None
+    
+    # Calculate typing score if data provided
+    if comment.typing_data:
+        typing_data_dict = comment.typing_data.model_dump()
+        typing_score = calculate_typing_score(
+            typing_data=typing_data_dict,
+            content_length=len(comment.content)
+        )
+        print(f"Creative Comment Typing Score: {typing_score:.2f}/100")
+    
     db_comment = models.CreativeComment(
         content=comment.content,
         creative_post_id=post_id,
         author_id=user.id
     )
+    
+    # Store typing score if available
+    if typing_score is not None:
+        db_comment.typing_metrics = typing_data_dict
+        db_comment.human_score = typing_score
+    
+    # Analyze with BERT (includes typing score in hybrid calculation)
+    if hybrid_scorer:
+        try:
+            ml_analysis = hybrid_scorer.score_content(
+                text=comment.content,
+                typing_score=typing_score
+            )
+            
+            print(f"\nCREATIVE COMMENT BERT ANALYSIS:")
+            print(f"  Content: {comment.content[:50]}...")
+            print(f"  Typing Score: {typing_score}")
+            print(f"  BERT Score: {ml_analysis['bert_score']:.2f}")
+            print(f"  Hybrid Score: {ml_analysis['hybrid_score']:.2f}")
+            print(f"  Recommendation: {ml_analysis['recommendation']}\n")
+            
+            # Store ML scores
+            db_comment.authenticity_score = ml_analysis['hybrid_score']
+            db_comment.classification = ml_analysis['classification']
+            db_comment.recommendation = ml_analysis['recommendation']
+            db_comment.bert_confidence = ml_analysis['bert_details']['human_probability']
+            
+            # Block if recommendation is block
+            if ml_analysis['recommendation'] == 'block':
+                db.rollback()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Comment doesn't look genuine (score: {ml_analysis['hybrid_score']:.1f}/100). Please write an authentic comment."
+                )
+            
+            logger.info(f"Creative Comment ML Analysis - Classification: {ml_analysis['classification']}, Score: {ml_analysis['hybrid_score']:.1f}/100")
+        
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"BERT analysis error on creative comment: {e}")
+            # Continue without ML if it fails
+    else:
+        logger.warning("BERT model not available, processing creative comment without ML analysis")
     
     db.add(db_comment)
     db.commit()
@@ -528,9 +568,11 @@ def create_creative_comment(
         "id": db_comment.id,
         "content": db_comment.content,
         "author": db_comment.author.username,
-        "created_at": db_comment.created_at
+        "created_at": db_comment.created_at,
+        "human_score": db_comment.human_score,
+        "authenticity_score": db_comment.authenticity_score,
+        "classification": db_comment.classification
     }
-
 @router.get("/{post_id}/comments")
 def get_creative_comments(post_id: int, db: Session = Depends(get_db)):
     """Get all comments for a creative post"""

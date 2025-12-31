@@ -40,19 +40,19 @@ class Post(Base):
     space = Column(String(20), default="pulse")  # "pulse", "creative", "sparks"
     typing_metrics = Column(JSON, nullable=True)
     human_score = Column(Float, nullable=True)  # 0-100 score
-    analysis_decision = Column(String(20), nullable=True)  # "approve", "flag", "block"
+    analysis_decision = Column(String(20), nullable=True)  # "approve", "block"
     analysis_flags = Column(JSON, nullable=True)  # List of red flags
     blocked_reason = Column(String(255), nullable=True)
     
     # BERT ML Analysis
     authenticity_score = Column(Float, nullable=True)  # 0-100
     classification = Column(String(20), nullable=True)  # 'human', 'ambiguous', 'ai'
-    recommendation = Column(String(20), nullable=True)  # 'approve', 'flag', 'block'
+    recommendation = Column(String(20), nullable=True)  # 'approve', 'block'
     bert_confidence = Column(Float, nullable=True)  # BERT's confidence %
     
     #Content analysis
     content_analysis = Column(JSON, nullable=True)
-    requires_review = Column(Boolean, default=False)  # Flagged for block orreview
+    requires_review = Column(Boolean, default=False)
 
     author = relationship("User", back_populates="posts")
     likes = relationship("Like", back_populates="post", cascade="all, delete-orphan")
@@ -89,6 +89,16 @@ class Comment(Base):
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
+    # Typing analysis
+    typing_metrics = Column(JSON, nullable=True)
+    human_score = Column(Float, nullable=True)  # 0-100 score from typing patterns
+    
+    # BERT ML Analysis
+    authenticity_score = Column(Float, nullable=True)  # 0-100 hybrid score
+    classification = Column(String(20), nullable=True)  # 'human' or 'ai'
+    recommendation = Column(String(20), nullable=True)  # 'approve' or 'block'
+    bert_confidence = Column(Float, nullable=True)  # BERT's human probability %
+    
     post = relationship("Post", back_populates="comments")
     author = relationship("User", back_populates="comments")
 
@@ -110,14 +120,14 @@ class CreativePost(Base):
     # Typing analysis (for Writing category)
     typing_metrics = Column(JSON, nullable=True)
     human_score = Column(Float, nullable=True)  # 0-100 score
-    analysis_decision = Column(String(20), nullable=True)  # approve, flag, block
+    analysis_decision = Column(String(20), nullable=True)  # approve, block
     analysis_flags = Column(JSON, nullable=True)  # List of red flags
     blocked_reason = Column(String(255), nullable=True)
     
     # BERT ML Analysis
     authenticity_score = Column(Float, nullable=True)  # 0-100
-    classification = Column(String(20), nullable=True)  # 'human', 'ambiguous', 'ai'
-    recommendation = Column(String(20), nullable=True)  # 'approve', 'flag', 'block'
+    classification = Column(String(20), nullable=True)  # 'human', 'ai'
+    recommendation = Column(String(20), nullable=True)  # 'approve', 'block'
     bert_confidence = Column(Float, nullable=True)  # BERT's confidence %
     
     # Content analysis (for Writing category)
@@ -185,6 +195,16 @@ class CreativeComment(Base):
     creative_post_id = Column(Integer, ForeignKey("creative_posts.id"), nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Typing analysis
+    typing_metrics = Column(JSON, nullable=True)
+    human_score = Column(Float, nullable=True)  # 0-100 score from typing patterns
+    
+    # BERT ML Analysis
+    authenticity_score = Column(Float, nullable=True)  # 0-100 hybrid score
+    classification = Column(String(20), nullable=True)  # 'human' or 'ai'
+    recommendation = Column(String(20), nullable=True)  # 'approve' or 'block'
+    bert_confidence = Column(Float, nullable=True)  # BERT's human probability %
     
     creative_post = relationship("CreativePost", back_populates="comments")
     author = relationship("User")

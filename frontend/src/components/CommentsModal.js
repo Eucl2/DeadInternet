@@ -3,6 +3,7 @@ import axios from 'axios';
 import { formatTimestamp } from '../utils/timeUtils';
 import { API_BASE, COMMENT_LIMITS } from '../config/constants';
 import { usePasteHandler } from '../hooks/usePasteHandler';
+import { useTypingCapture } from '../hooks/useTypingCapture';
 
 const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) => {
   const [comments, setComments] = useState([]);
@@ -11,12 +12,14 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { pasteMessage, handlePaste } = usePasteHandler(COMMENT_LIMITS.PASTE_MESSAGE_DURATION || 4000);
+  const { handleFocus, handleKeyDown, getTypingDataForSubmission, resetTypingData } = useTypingCapture();
 
   const baseUrl = isCreative ? `${API_BASE}/creative` : `${API_BASE}/posts`;
 
   useEffect(() => {
     if (isOpen && postId) {
       loadComments();
+      resetTypingData();
     }
   }, [isOpen, postId]);
 
@@ -65,9 +68,22 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
 
     try {
       const token = localStorage.getItem('session_id');
+      const typingData = getTypingDataForSubmission();
+
+      console.log('Submitting comment with typing data:', {
+        intervalCount: typingData.intervals.length,
+        totalTime: typingData.totalTime,
+        thinkingTime: typingData.thinkingTime,
+        backspaceCount: typingData.backspaceCount,
+        pauseCount: typingData.pauseCount
+      });
+
       const response = await axios.post(
         `${baseUrl}/${postId}/comments`,
-        { content: newComment },
+        { 
+          content: newComment,
+          typing_data: typingData
+        },
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -75,6 +91,7 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
 
       setComments([response.data, ...comments]);
       setNewComment('');
+      resetTypingData();
     } catch (error) {
       console.error('Failed to post comment:', error);
       if (error.response?.data?.detail) {
@@ -112,6 +129,8 @@ const CommentsModal = ({ isOpen, postId, onClose, user, isCreative = false }) =>
           <textarea
             value={newComment}
             onChange={handleCommentChange}
+            onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
             onPaste={handlePaste}
             placeholder="Write a comment..."
             className="w-full bg-gray-800 border border-gray-700 rounded p-3 text-white placeholder-gray-500 focus:border-orange-500 focus:outline-none resize-none break-words whitespace-normal"

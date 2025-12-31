@@ -52,6 +52,7 @@ class CustomDenseLayers:
 
 
 class ArtAuthenticityDetector:
+    AI_CONFIDENCE_THRESHOLD = 0.60
     
     def __init__(self, model_path: str):
         try:
@@ -115,14 +116,23 @@ class ArtAuthenticityDetector:
             logger.error(f"Error processing image bytes: {e}")
             raise
     
+    def _make_decision(self, ai_confidence: float) -> tuple:
+        #Make classification decision based on AI confidence threshold.
+
+        if ai_confidence > self.AI_CONFIDENCE_THRESHOLD:
+            return "ai", "block"
+        else:
+            return "human", "approve"
+    
     def analyze(self, image_path: str) -> dict:
+        """Analyze image from file path"""
         if not self.model:
             logger.warning("Model not available, cannot analyze image")
             return {
                 "classification": "unknown",
                 "ai_confidence": None,
                 "human_confidence": None,
-                "recommendation": "approve",  # Default to approve if model unavailable
+                "recommendation": "approve",
                 "error": "Model not loaded"
             }
         
@@ -135,16 +145,7 @@ class ArtAuthenticityDetector:
             ai_confidence = float(prediction[0][0])
             human_confidence = 1.0 - ai_confidence
             
-            # Classify based on confidence thresholds
-            if ai_confidence > 0.64:
-                classification = "ai"
-                recommendation = "block"
-            elif ai_confidence > 0.5:
-                classification = "ai"
-                recommendation = "flag"
-            else:
-                classification = "human"
-                recommendation = "approve"
+            classification, recommendation = self._make_decision(ai_confidence)
             
             logger.info(
                 f"Art Analysis: {classification.upper()} "
@@ -169,7 +170,7 @@ class ArtAuthenticityDetector:
             }
     
     def analyze_bytes(self, file_bytes: bytes) -> dict:
-        """Analyze image from bytes instead of file path (works for both local and production)"""
+        """Analyze image from bytes"""
         if not self.model:
             logger.warning("Model not available, cannot analyze image")
             return {
@@ -189,16 +190,7 @@ class ArtAuthenticityDetector:
             ai_confidence = float(prediction[0][0])
             human_confidence = 1.0 - ai_confidence
             
-            # Classify based on confidence thresholds
-            if ai_confidence > 0.64:
-                classification = "ai"
-                recommendation = "block"
-            elif ai_confidence > 0.5:
-                classification = "ai"
-                recommendation = "flag"
-            else:
-                classification = "human"
-                recommendation = "approve"
+            classification, recommendation = self._make_decision(ai_confidence)
             
             logger.info(
                 f"Art Analysis: {classification.upper()} "

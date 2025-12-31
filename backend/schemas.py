@@ -122,12 +122,16 @@ class CreativePostResponse(BaseModel):
     
 class CommentCreate(BaseModel):
     content: str = Field(..., min_length=1, max_length=280)
+    typing_data: Optional[TypingData] = None
 
 class CommentResponse(BaseModel):
     id: int
     content: str
     author: str
     created_at: datetime
+    human_score: Optional[float] = None
+    authenticity_score: Optional[float] = None
+    classification: Optional[str] = None
     
     class Config:
         from_attributes = True
