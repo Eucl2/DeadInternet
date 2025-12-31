@@ -312,9 +312,13 @@ async def create_creative_post(
 @router.get("", response_model=List[CreativePostResponse])
 def get_creative_posts(
     category: Optional[str] = None,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Get creative posts, optionally filtered by category"""
+    # Get current user
+    user_id = verify_access_token(credentials.credentials)
+    
     query = db.query(models.CreativePost)
     
     # Filter by category
@@ -324,6 +328,12 @@ def get_creative_posts(
         query = query.filter(models.CreativePost.category == category)
     
     posts = query.order_by(models.CreativePost.created_at.desc()).all()
+    
+    # Fetch all likes for this user in one efficient query
+    user_liked_post_ids = db.query(models.CreativeLike.creative_post_id).filter(
+        models.CreativeLike.user_id == user_id
+    ).all()
+    liked_ids = {row[0] for row in user_liked_post_ids}
     
     return [
         CreativePostResponse(
@@ -338,7 +348,7 @@ def get_creative_posts(
             created_at=post.created_at,
             like_count=post.like_count,
             comment_count=post.comment_count,
-            user_has_liked=False,
+            user_has_liked=post.id in liked_ids,
             progress_photos=[
                 ProgressPhotoResponse(
                     id=p.id,
@@ -357,13 +367,24 @@ def get_creative_posts(
 @router.get("/{post_id}", response_model=CreativePostResponse)
 def get_creative_post(
     post_id: int,
+    credentials = Depends(security),
     db: Session = Depends(get_db)
 ):
     """Get a specific creative post"""
+    # Get current user
+    user_id = verify_access_token(credentials.credentials)
+    
     post = db.query(models.CreativePost).filter(models.CreativePost.id == post_id).first()
     
     if not post:
         raise HTTPException(status_code=404, detail="Creative post not found")
+    
+    user_has_liked = bool(
+        db.query(models.CreativeLike).filter(
+            models.CreativeLike.user_id == user_id,
+            models.CreativeLike.creative_post_id == post_id
+        ).first()
+    )
     
     return CreativePostResponse(
         id=post.id,
@@ -377,7 +398,7 @@ def get_creative_post(
         created_at=post.created_at,
         like_count=post.like_count,
         comment_count=post.comment_count,
-        user_has_liked=False,
+        user_has_liked=user_has_liked,
         progress_photos=[
             ProgressPhotoResponse(
                 id=p.id,
