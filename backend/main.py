@@ -463,6 +463,7 @@ def create_comment(
             print(f"\nCOMMENT BERT ANALYSIS:")
             print(f"  Content: {comment.content[:50]}...")
             print(f"  Typing Score: {typing_score}")
+            print(f"  BERT Score: {ml_analysis['bert_score']:.2f}")
             print(f"  Hybrid Score: {ml_analysis['hybrid_score']:.2f}")
             print(f"  Recommendation: {ml_analysis['recommendation']}\n")
             
